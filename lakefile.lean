@@ -13,3 +13,7 @@ lean_lib Advent {
 lean_exe advent {
   root := `Main
 }
+
+lean_exe day1{
+  root := `days.day1
+}
