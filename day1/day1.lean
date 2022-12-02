@@ -23,14 +23,19 @@ def calcWeights(ss: List String) (acc: List Int) (cur: Int) : List Int :=
         | some x => calcWeights rest acc (cur + x)
         | none => []
 
-def maxWeight (s: String) : Int := 
+def top1 (s: String) : Int := 
   let ws := calcWeights (String.split s Char.isWhitespace) [] 0
   Option.getD (List.maximum? ws) 0
 
+def top3 (s: String) : Int := 
+  let ws := calcWeights (String.split s Char.isWhitespace) [] 0
+  let wsa := List.take 3 (Array.toList (Array.qsort (List.toArray ws) (· > ·)))
+  List.foldl (· + ·) 0 wsa
+
 def main : IO Unit := do
   let lines <- IO.FS.readFile "./day1/test-input.txt"
-  -- IO.println (String.split lines Char.isWhitespace)  
-  IO.println (maxWeight lines)
+  IO.println (top1 lines)
+  IO.println (top3 lines)
   return ()
 
 -- #eval 
