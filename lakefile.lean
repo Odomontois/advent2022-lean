@@ -17,3 +17,5 @@ lean_exe advent {
 lean_exe day1{ root := `days.day1 }
 
 lean_exe day2{ root := `days.day2 }
+
+lean_exe day3{ root := `days.day3 }

@@ -72,7 +72,6 @@ def printScore
   IO.println (fullScore inputs)
  
 def main : IO Unit := do
-let input <- readInput 2
-let lines := String.splitOn input "\n"
+let lines <- readLines 2
 printScore parseChoices1 lines 
 printScore parseChoices2 lines 
