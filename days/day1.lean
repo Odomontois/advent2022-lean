@@ -1,6 +1,5 @@
 import Lean
 
-import Advent.Parse
 import Advent.Read
 
 def calcWeights(ss: List String) (acc: List Int) (cur: Int) : List Int := 
@@ -8,7 +7,7 @@ def calcWeights(ss: List String) (acc: List Int) (cur: Int) : List Int :=
     | List.nil => cur :: acc
     | List.cons h rest => 
       if h == "" then calcWeights rest (cur :: acc) 0
-      else match parseInt h with 
+      else match h.toInt? with 
         | some x => calcWeights rest acc (cur + x)
         | none => []
 
