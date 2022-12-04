@@ -9,10 +9,12 @@ def parsePair  (f : String -> Option α) (sep s: String) : Option (Pair α) := d
 
 def Assignment := parsePair (parsePair (·.toNat?) "-") ","
 
-def contains: Pair Nat -> Pair Nat -> Bool
+def AssignmentPredicate := Pair Nat -> Pair Nat -> Bool
+
+def contains: AssignmentPredicate
 | (a1, b1), (a2, b2) => a1 <= a2 && b2 <= b1
 
-def before : Pair Nat -> Pair Nat -> Bool
+def before : AssignmentPredicate
 | (_, b1), (a2, _) => b1 < a2
 
 def anyOrder (f: α -> α -> Bool):  Pair α -> Bool
