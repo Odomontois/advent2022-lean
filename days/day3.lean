@@ -1,4 +1,5 @@
 import Advent.Read
+import Advent.List
 import Lean
 
 def charCode (c: Char) : Nat := 
@@ -19,14 +20,6 @@ def commonChar (s: String) : Nat :=
   let k := s.length / 2
   let ca := codeArray (s.take k)
   findCommon (s.drop k) ca
-
-def group (l: List α) (n: Nat): List (List α) := 
-  loop l n [] []
-where
-  loop : List α -> Nat ->  List α -> List (List α)  -> List (List α)
-  | [], _, gacc, acc=> (gacc.reverse :: acc).reverse
-  | x :: xs, 0, gacc, acc => loop xs (n - 1)  [x] (gacc.reverse :: acc) 
-  | x :: xs, rem + 1, gacc, acc => loop xs rem (x :: gacc) acc  
 
 def common3 (l: List String): Nat := 
   let init := Array.mkArray 53 true
