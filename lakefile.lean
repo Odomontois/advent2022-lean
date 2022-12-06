@@ -23,3 +23,5 @@ lean_exe day3{ root := `days.day3 }
 lean_exe day4{ root := `days.day4 }
 
 lean_exe day5{ root := `days.day5 }
+
+lean_exe day6{ root := `days.day6 }

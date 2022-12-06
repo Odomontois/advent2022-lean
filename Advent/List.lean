@@ -18,3 +18,7 @@ where
 loop (acc: List (List α)): (List (List α)) -> List (List α)
   | [] => acc
   | head :: rest => loop (head.zipWith (· :: ·) acc) rest
+
+def tails: List α -> List (List α)
+| x :: xs => (x :: xs) :: tails xs
+| [] => []
