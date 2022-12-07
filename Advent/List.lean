@@ -33,10 +33,55 @@ namespace differs
 
 def DifferentList [BEq α] (xs: List α): Prop := ∀ i j : Fin (xs.length), (xs.get i = xs.get j) -> i = j
 
+def appendFin (x: α) (xs: List α) (i : Fin (xs.length)): Fin ((x :: xs).length) :=
+  ⟨ Nat.succ i.val, Nat.succ_le_succ i.isLt ⟩
+
+
 theorem DifListTail [BEq α] {x: α} {xs: List α}: DifferentList (x :: xs) -> DifferentList xs := by
   intros xxs
   unfold DifferentList
-  generalize xs.length = ul
+  intros i j iej
+  apply Fin.eq_of_val_eq
+  let i1 := appendFin x xs i
+  let j1 := appendFin x xs j
+  let h1 := xxs i1 j1
+  simp [List.get] at h1
+  let i1ej1 := h1 iej
+  simp [appendFin] at i1ej1
+  exact i1ej1
+
+theorem DifListShuffle [BEq α] {x y : α} {xs: List α}: DifferentList (x :: y :: xs) -> DifferentList (y :: x :: xs) := by
+  admit
+  
+theorem DifListHead [da: DecidableEq α] {x: α} {xs: List α}: 
+  DifferentList (x::xs) -> xs.all (· != x) = true := by
+  intros h
+  cases xs with 
+  | nil => 
+    simp [List.all, List.foldr]
+  | cons y ys => 
+    simp [List.all, List.foldr]
+    constructor
+    simp [bne, BEq.beq, decide]
+    apply decide_eq_false
+    intro yex
+    let i: Fin (x :: y :: ys).length := Fin.mk 0 (Nat.zero_lt_succ _)
+    let j: Fin (x :: y :: ys).length := Fin.mk 1 (Nat.succ_le_succ (Nat.zero_lt_succ _))
+    let h2 := h i j
+    simp [List.get] at h2
+    apply h2
+    rw [yex]
+    apply DifListHead
+    apply @DifListTail _ _ y _
+    apply DifListShuffle
+    exact h
+
+    
+
+
+
+
+
 
 theorem nilDifferent [BEq α] : DifferentList ([] : List α) := by
   unfold DifferentList
@@ -58,7 +103,7 @@ theorem correctRight [DecidableEq α] (xs: List α) (dl: DifferentList xs): diff
     unfold differs 
     apply (bool_and_true _ _).mpr
     constructor
-    sorry
+    admit
     apply correctRight
     apply DifListTail dl
 
