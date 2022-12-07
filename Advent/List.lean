@@ -44,11 +44,10 @@ match i.val with
   | _ + 2 => i
 
 theorem shuffleCancelable {n: Nat} {i : Fin (n + 2)}: shuffleIndex (shuffleIndex i) = i := by
-  cases i with 
-    | mk v lt => 
-      cases v with
-      | zero => simp [shuffleIndex] 
-      | succ v1 => cases v1 <;> simp [shuffleIndex]
+  cases i with | mk v lt => 
+  cases v with
+  | zero => simp [shuffleIndex] 
+  | succ v1 => cases v1 <;> simp [shuffleIndex]
 
 theorem shuffledGet {x y : α} {xs : List α} (i : Fin (xs.length + 2)): (x :: y :: xs).get i = (y :: x :: xs).get (shuffleIndex i) := by
   cases i with 
@@ -111,10 +110,50 @@ theorem nilDifferent [BEq α] : DifferentList ([] : List α) := by
   cases i.isLt  
 
 
+theorem differsHead [DecidableEq α] {x : α} {xs : List α} {i: Fin (xs.length)}
+  (d: differs (x :: xt) = true) : 
+  Not (x = xs.get i) := by admit
+
+
 theorem correctLeft[DecidableEq α] (xs: List α) (p: differs xs = true): DifferentList xs := by 
-  cases xs
-  apply nilDifferent
-  sorry
+  cases xs with
+  | nil => apply nilDifferent
+  | cons h t => 
+    unfold DifferentList
+    intros i j iej
+    cases i with | mk iv ilt =>
+    cases j with | mk jv jlt => 
+    apply Fin.eq_of_val_eq
+    simp
+    cases iv 
+    . cases jv
+      simp
+      case succ j => 
+        simp [List.get] at iej
+        let xs := differsHead p iej
+        contradiction                
+    case succ i => 
+      cases jv
+      case zero => 
+        simp [List.get] at iej
+        let xs := differsHead p iej.symm
+        contradiction
+      case succ j => 
+        simp [List.get] at iej
+        simp
+        simp [differs] at p
+        cases p 
+        case intro _ tdiff =>
+        let td := correctLeft t tdiff        
+        let u := td _ _ iej
+        simp at u
+        assumption
+
+
+
+
+
+  
 
 theorem correctRight [DecidableEq α] (xs: List α) (dl: DifferentList xs): differs xs = true := by
   cases xs with
