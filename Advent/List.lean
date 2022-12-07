@@ -110,7 +110,22 @@ theorem nilDifferent [BEq α] : DifferentList ([] : List α) := by
   cases i.isLt  
 
 theorem listAllCorrect {xs : List α} {p : α -> Bool} (i: Fin (xs.length)) :
-  xs.all p = true -> p (xs.get i) = true := by admit 
+  xs.all p = true -> p (xs.get i) = true := by 
+  intro all
+  cases i 
+  case mk iv ilt => 
+  cases xs with
+  | nil => contradiction
+  | cons h t => 
+    simp [List.all, List.foldr] at all 
+    cases all 
+    case intro first rest =>
+    cases iv <;> simp [List.get]
+    assumption
+    case succ iv =>
+    apply listAllCorrect
+    assumption    
+  
 
 theorem differsHead [de: DecidableEq α] {x : α} {xs : List α} {i: Fin (xs.length)}
   (d: differs (x :: xs) = true) : 
