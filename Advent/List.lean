@@ -109,10 +109,27 @@ theorem nilDifferent [BEq α] : DifferentList ([] : List α) := by
   simp [List.length] at i
   cases i.isLt  
 
+theorem listAllCorrect {xs : List α} {p : α -> Bool} (i: Fin (xs.length)) :
+  xs.all p = true -> p (xs.get i) = true := by admit 
 
-theorem differsHead [DecidableEq α] {x : α} {xs : List α} {i: Fin (xs.length)}
-  (d: differs (x :: xt) = true) : 
-  Not (x = xs.get i) := by admit
+theorem differsHead [de: DecidableEq α] {x : α} {xs : List α} {i: Fin (xs.length)}
+  (d: differs (x :: xs) = true) : 
+  Not (x = xs.get i) := by
+  intro p
+  unfold differs at d
+  simp at d
+  cases d
+  case intro all _ =>
+  let une := listAllCorrect i all
+  simp [bne, BEq.beq] at une
+  generalize List.get xs i = li at p une
+  let dd := (decide_eq_true (p.symm)).symm
+  let uu := dd.trans une
+  contradiction
+
+  
+
+  
 
 
 theorem correctLeft[DecidableEq α] (xs: List α) (p: differs xs = true): DifferentList xs := by 
