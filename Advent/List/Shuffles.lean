@@ -13,7 +13,8 @@ theorem shuffleCancelable {n: Nat} {i : Fin (n + 2)}: shuffleIndex (shuffleIndex
   | zero => simp [shuffleIndex] 
   | succ v1 => cases v1 <;> simp [shuffleIndex]
 
-theorem shuffledGet {x y : α} {xs : List α} (i : Fin (xs.length + 2)): (x :: y :: xs).get i = (y :: x :: xs).get (shuffleIndex i) := by
+theorem shuffledGet {x y : α} {xs : List α} (i : Fin (xs.length + 2)): 
+  (x :: y :: xs).get i = (y :: x :: xs).get (shuffleIndex i) := by
   cases i with 
     | mk v _ => 
       cases v with 

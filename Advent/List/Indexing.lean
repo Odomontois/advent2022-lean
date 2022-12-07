@@ -83,8 +83,8 @@ theorem differsHead [de: DecidableEq α] {x : α} {xs : List α} {i: Fin (xs.len
   cases d with | intro all _ =>
   let une := listAllCorrect i all
   simp [bne, BEq.beq] at une
-  generalize List.get xs i = li at *
-  rw [decide_eq_true p.symm] at une
+  let une := of_decide_eq_false une
+  rw [p] at une
   contradiction
 
 
@@ -122,14 +122,12 @@ theorem correctLeft[DecidableEq α] (xs: List α) (p: differs xs = true): Differ
   
 
 theorem correctRight [DecidableEq α] (xs: List α) (dl: DifferentList xs): differs xs = true := by
-  cases xs
-  . simp [differs]
-  . case cons h t =>
-    unfold differs 
-    apply (bool_and_true _ _).mpr
-    constructor
-    apply DifListHead dl
-    apply correctRight
+  cases xs <;> simp [differs]
+  case cons h t =>
+  simp [differs] 
+  constructor
+  . apply DifListHead dl
+  . apply correctRight
     apply DifListTail _ dl
 
 theorem differsIsCorect [DecidableEq α] (xs: List α): (differs xs = true) <-> DifferentList xs := by
