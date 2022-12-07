@@ -123,7 +123,7 @@ theorem correctRight [DecidableEq α] (xs: List α) (dl: DifferentList xs): diff
     unfold differs 
     apply (bool_and_true _ _).mpr
     constructor
-    admit
+    apply DifListHead dl
     apply correctRight
     apply DifListTail dl
 
