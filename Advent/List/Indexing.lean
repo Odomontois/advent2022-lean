@@ -84,8 +84,7 @@ theorem differsHead [de: DecidableEq α] {x : α} {xs : List α} {i: Fin (xs.len
   let une := listAllCorrect i all
   simp [bne, BEq.beq] at une
   generalize List.get xs i = li at *
-  let dd := (decide_eq_true (p.symm)).symm
-  let uu := dd.trans une
+  rw [decide_eq_true p.symm] at une
   contradiction
 
 
