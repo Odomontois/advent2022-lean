@@ -28,7 +28,7 @@ def parseMove (s: String): Option Move :=
 
 def applyMove (rev: Bool := true) (s: Stacks)  : Move -> Stacks
   | (cnt, si + 1, ti + 1) =>
-    let taken := (s.get! si).take cnt
+    let taken := s[si]!.take cnt
     let dropped := if rev then taken.reverse else taken
     (s.modify ti (dropped ++ ·)).modify si (·.drop cnt)
   | _ => s

@@ -10,7 +10,7 @@ def codeArray (s: String): Array Bool :=
   s.foldl (fun arr c => arr.set! (charCode c) true) init 
 
 def intersect (ca1: Array Bool) (ca2: Array Bool): Array Bool := 
-  ca1.mapIdx (fun i x => x && ca2.getD i false)
+  ca1.mapIdx (fun i x => x && ca2[i]!)
 
 def findCommon(s: String) (ca: Array Bool): Nat := 
   let codes := s.toList.map charCode
