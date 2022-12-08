@@ -15,8 +15,9 @@ theorem shuffleCancelable {n: Nat} {i : Fin (n + 2)}: shuffleIndex (shuffleIndex
 
 theorem shuffledGet {x y : α} {xs : List α} (i : Fin (xs.length + 2)): 
   (x :: y :: xs).get i = (y :: x :: xs).get (shuffleIndex i) := by
-  cases i with 
-    | mk v _ => 
-      cases v with 
-      | zero => simp [List.get]
-      | succ v1 => cases v1 <;> simp [List.get]
+  cases i with | mk v vlt => 
+  cases v 
+  . simp [List.get]
+  . case succ v1 => cases v1 <;> simp [List.get]
+
+    
