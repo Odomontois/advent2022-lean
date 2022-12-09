@@ -26,3 +26,9 @@ def tails: List α -> List (List α)
 def differs [BEq α]: List α -> Bool
 | [] => true
 | x :: xs => xs.all (· != x) && differs xs
+
+def List.scanl (xs: List α) (f: β -> α -> β) (init: β): List β := 
+  let go (a: α): StateM β β := fun b => 
+    let x := f b a
+    (x, x)
+  init :: (xs.mapM go).run' init
