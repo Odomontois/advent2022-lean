@@ -82,7 +82,6 @@ def main: IO Unit := do
   IO.println allSizes
   IO.println ss
   let need := total - 40000000
-  IO.println need
   let found := allSizes 
               |> Array.filter (· >= need)
               |> Array.foldl Min.min total
