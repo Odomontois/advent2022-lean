@@ -5,14 +5,7 @@ def parse (cmd: String): List (Option Int) :=
   | ["addx", s] => [none, s.toInt?]
   | _ => [none]
 
-
-def handle (cmd: Option Int): StateM Int Int
-  | x => 
-    let dx := cmd.getD 0
-    (x, x + dx)
-
--- def handle2 (cmd: Option Int): StateM Cathod Unit
-
+def handle (cmd: Option Int): StateM Int Int :=  fun x => (x, x + cmd.getD 0)
 
 def main : IO Unit := do
   let inps <- readLines 10
