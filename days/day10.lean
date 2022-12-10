@@ -14,7 +14,7 @@ def main : IO Unit := do
   let (res, _) := cmds.mapM handle 1
   let ress := cycles.map (fun i => res[i - 1]! * Int.ofNat i)
   IO.println ress
-  IO.println (ress.foldl (· + ·) 0)
+  IO.println ress.sum
   let pos := res.enum.map (fun (i, x) => if (x - i.mod 40).abs <? 2 then '#' else '.')
   IO.println res
   let posLines := pos.group 40 |> List.map String.mk 

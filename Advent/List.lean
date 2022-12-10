@@ -32,3 +32,5 @@ def List.scanl (xs: List α) (f: β -> α -> β) (init: β): List β :=
     let x := f b a
     (x, x)
   init :: (xs.mapM go).run' init
+
+def List.sum [HAdd α α α] [OfNat α 0] (xs: List α): α := xs.foldl (· + ·) 0

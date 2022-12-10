@@ -12,12 +12,12 @@ def calcWeights(ss: List String) (acc: List Int) (cur: Int) : List Int :=
 
 def top1 (s: String) : Int := 
   let ws := calcWeights (String.split s Char.isWhitespace) [] 0
-  Option.getD (List.maximum? ws) 0
+  (List.maximum? ws).getD 0
 
 def top3 (s: String) : Int := 
   let ws := calcWeights (String.split s Char.isWhitespace) [] 0
   let wsa := List.take 3 (Array.toList (Array.qsort (List.toArray ws) (· > ·)))
-  List.foldl (· + ·) 0 wsa
+  wsa.sum
 
 def main : IO Unit := do
   let lines <- readInput 1
