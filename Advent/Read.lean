@@ -1,9 +1,13 @@
 def readInput (i: Int) : IO String := do
   let full <- IO.getEnv "full"
+  let add <- IO.getEnv "add"
   let dir := if full == some "true" 
     then "full-input"
     else "test-input"
-  let path := s!"./{dir}/day{i}.txt"
+  let suffix := if let some s := add 
+    then "-" ++ s
+    else ""
+  let path := s!"./{dir}/day{i}{suffix}.txt"
   IO.FS.readFile path
 
 
