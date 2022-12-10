@@ -7,7 +7,7 @@ notation "Stacks" => Array (List Char)
 
 
 def parseStackLine (s: String): Option Stack := 
-  if s.startsWith " 1" then none else (group s.toList 4).map parse
+  if s.startsWith " 1" then none else (s.toList.group 4).map parse
 where 
   parse: List Char -> Option Char
   | '[' :: c :: ']' :: _  => c
@@ -18,7 +18,7 @@ def parseStacks (acc: List Stack): List String -> Stacks × List String
     | some line  => parseStacks (line :: acc) rest
     | none       => final rest
   | [] =>  final [] 
-where final (rem: List String) := (((transposeRev acc).map (·.filterMap (·))).toArray, rem)
+where final (rem: List String) := ((acc.transposeRev.map (·.filterMap (·))).toArray, rem)
 
 
 def parseMove (s: String): Option Move := 

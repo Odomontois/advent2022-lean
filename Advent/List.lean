@@ -1,4 +1,4 @@
-def group (l: List α) (n: Nat): List (List α) := 
+def List.group (l: List α) (n: Nat): List (List α) := 
   loop l n [] []
 where
   loop : List α -> Nat ->  List α -> List (List α)  -> List (List α)

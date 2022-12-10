@@ -30,7 +30,7 @@ def main : IO Unit := do
   let lines <- readLines 3
   let commons := lines.map commonChar
   IO.println (commons.foldl (· + ·) 0)
-  let grouped := group lines 3
+  let grouped := lines.group 3
   let c3s := grouped.map common3
   IO.println c3s
   IO.println (c3s.foldl (· + ·) 0)
