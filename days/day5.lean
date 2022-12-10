@@ -1,5 +1,4 @@
-import Advent.List
-import Advent.Read
+import Advent
 
 notation "Move" => Nat × Nat × Nat
 notation "Stack" => List (Option Char)

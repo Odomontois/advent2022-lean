@@ -1,6 +1,4 @@
-import Lean.Data.HashMap
-import Advent.Read
--- import Lean.Elab.Deriving
+import Advent
 import Lean
 
 open Lean (ToJson HashMap)

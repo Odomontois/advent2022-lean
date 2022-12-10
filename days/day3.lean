@@ -1,5 +1,4 @@
-import Advent.Read
-import Advent.List
+import Advent
 import Lean
 
 def charCode (c: Char) : Nat := 

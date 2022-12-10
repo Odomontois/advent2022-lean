@@ -1,10 +1,5 @@
-import Advent.Function
-import Advent.Read
-import Advent.List
+import Advent
 import Lean
-import Lean.Data.HashSet
-import Advent.Ord
-import Advent.Int
 
 abbrev Point := Int × Int
 abbrev HT := Point × List Point
@@ -15,8 +10,8 @@ open Lean (HashSet)
 
 def follow: Point -> Point -> Point
 | (hx, hy), t@(tx, ty) => 
-  if abs (tx - hx) == 2 || abs (ty - hy) == 2
-  then (tx + signum (hx - tx), ty + signum (hy - ty))
+  if (tx - hx).abs == 2 || (ty - hy).abs == 2
+  then (tx + (hx - tx).signum, ty + (hy - ty).signum)
   else t
 
 def followAll(head: Point) (tails: List Point): List Point :=

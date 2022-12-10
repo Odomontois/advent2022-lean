@@ -1,6 +1,5 @@
 import Lean
-
-import Advent.Read
+import Advent
 
 def calcWeights(ss: List String) (acc: List Int) (cur: Int) : List Int := 
   match ss with 

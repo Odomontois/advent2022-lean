@@ -1,4 +1,4 @@
-import Advent.Read
+import Advent
 
 
 open Except (ok error)

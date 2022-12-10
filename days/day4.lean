@@ -1,4 +1,4 @@
-import Advent.Read
+import Advent
 
 def Pair (α : Type) :=  α × α
  

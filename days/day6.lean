@@ -1,5 +1,4 @@
-import Advent.List
-import Advent.Read
+import Advent
 
 def prefLength (n: Nat) (s: List Char): Nat :=
   (((tails s).enum.find? (fun xs => differs (xs.snd.take n))).map (·.fst + n)).getD 0

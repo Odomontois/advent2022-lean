@@ -1,6 +1,4 @@
-import Advent.Read
-import Advent.List
-import Advent.Ord
+import Advent
 import Lean
 
 class Visible (α β : Type _) where
