@@ -6,7 +6,7 @@ import Lean.Data.HashSet
 import Advent.Ord
 
 abbrev Point := Int × Int
-abbrev HT := Point × Point
+abbrev HT := Point × List Point
 
 
 open Ordering 
@@ -26,6 +26,10 @@ def follow: Point -> Point -> Point
   then (tx + signum (hx - tx), ty + signum (hy - ty))
   else t
 
+def followAll(head: Point) (tails: List Point): List Point :=
+  (tails.scanl follow head).tail!
+
+
 def move: HT -> Char -> HT
 | ((hx, hy), t), c => 
   let h' := match c with 
@@ -34,22 +38,25 @@ def move: HT -> Char -> HT
   | 'U' => (hx, hy + 1)
   | 'D' => (hx, hy - 1)
   | _   => (hx, hy)
-  let t' := follow h' t
+  let t' := followAll h' t
   (h', t')
 
 def parse(s: String): Char × Nat := (s.get! 0, (s.drop 2).toNat!)
 
-def tailPositions(ms: List Char):= 
-  let init: HT := ((0, 0), (0, 0))
-  ms.scanl move init |> List.map (·.snd)
+def tailPositions(count: Nat) (ms: List Char):= 
+  let init: HT := ((0, 0), List.replicate count (0, 0))
+  ms.scanl move init |> List.map (·.snd.getLast!)
 
+
+def countPoss (count: Nat) (moves: List Char) :=
+  let poss := (tailPositions count moves)
+  let ps := HashSet.empty.insertMany poss
+  ps.size
 
 def main : IO Unit := do
   let lines <- readLines 9
   let ms := lines.map parse
   let allMs := ms.bind (fun (c, n) => List.replicate n c)
 
-  let poss := (tailPositions allMs)
-  -- poss.forM IO.println
-  let ps := HashSet.empty.insertMany poss
-  IO.println ps.size
+  IO.println (countPoss 1 allMs)
+  IO.println (countPoss 9 allMs)
