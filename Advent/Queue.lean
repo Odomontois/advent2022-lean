@@ -5,21 +5,50 @@ class QueueData (α : Type u) where
   init: List α 
   tail: List α
 
-def QueueData.toList (q: QueueData α): List α := q.init ++ q.tail.reverse
+namespace QueueData
+def toList (q: QueueData α): List α := q.init ++ q.tail.reverse
 
-def QueueData.send (q: QueueData α) (a: α): QueueData α := {q with tail := a :: q.tail}
+def send (q: QueueData α) (a: α): QueueData α := {q with tail := a :: q.tail}
 
-def QueueData.pull (q: QueueData α) : Option (α × QueueData α) :=
+def pull (q: QueueData α) : Option (α × QueueData α) :=
   match q.init with
   | x :: xs  => some (x, ⟨xs, tail⟩)
   | [] => match q.tail.reverse with 
     | x :: xs => some (x, ⟨xs, []⟩)
     | []      => none
 
-def QueueData.isEmpty (q: QueueData α) : Bool := 
+def isEmpty (q: QueueData α) : Bool := 
   q.init.isEmpty && q.tail.isEmpty
 
-def QueueData.rel (a b : QueueData α): Prop := a.toList = b.toList
+
+def rel (a b : QueueData α): Prop := a.toList = b.toList
+
+theorem nonEmptyAppend {xs ys: List α} {x: α} (p: xs ++ (x :: ys) = []) : False := 
+  by cases xs <;> simp at p
+
+theorem isEmptyToList (q: QueueData α): q.isEmpty <-> q.toList = [] := by
+  simp [isEmpty, toList, List.isEmpty]
+  cases q.init <;> cases q.tail <;> simp
+  case cons h t => 
+  simp
+  intro p
+  apply nonEmptyAppend p
+
+theorem emptyPull (q: QueueData α): q.toList = [] <-> q.pull = none := by
+  simp [toList, pull]
+  cases q.init <;> cases q.tail <;> simp
+  case cons h t => 
+  constructor
+  generalize t.reverse = rt
+  . intro q
+    let u := nonEmptyAppend q
+    contradiction
+  . generalize up: List.reverse t ++ [h] = u
+    intro q
+    cases u <;> simp at q <;> simp
+
+
+end QueueData
 
 def QueueSetoid (α : Type u): Setoid (QueueData α) := {
   r := QueueData.rel
@@ -30,12 +59,17 @@ def QueueSetoid (α : Type u): Setoid (QueueData α) := {
   }
 }
 
+
+
+
 def Queue (α : Type u) := Quotient (QueueSetoid α) 
 
-def Queue.toList (q: Queue α): List α := 
+namespace Queue
+
+def toList (q: Queue α): List α := 
   q.lift (·.toList) <| by intros; assumption
 
-def Queue.send (q: Queue α) (x: α): Queue α := 
+def send (q: Queue α) (x: α): Queue α := 
   q.lift (fun qd => Quot.mk _ (qd.send x)) <| by
     simp [HasEquiv.Equiv]
     unfold Setoid.r
@@ -55,7 +89,7 @@ macro_rules
   | `(tactic| qsound) => `(tactic| apply Quot.sound; simp [QueueSetoid, QueueData.rel, QueueData.toList])
 
 
-def Queue.pull (q: Queue α) : Option (α × Queue α) :=
+def pull (q: Queue α) : Option (α × Queue α) :=
   q.lift (fun qd => qd.pull.map (fun (a, xs) => (a, Quot.mk _ xs))) <| by
   simp [HasEquiv.Equiv]
   unfold Setoid.r
@@ -118,7 +152,7 @@ def Queue.pull (q: Queue α) : Option (α × Queue α) :=
       qsound
       exact p.right
 
-def Queue.isEmpty (q: Queue α): Bool := 
+def isEmpty (q: Queue α): Bool := 
   q.lift (·.isEmpty) <| by admit
 
 
@@ -126,4 +160,4 @@ instance: Inhabited (Queue α) where
   default := Quot.mk _ ⟨[], []⟩
 
 
-  
+end Queue
