@@ -16,6 +16,9 @@ def QueueData.pull (q: QueueData α) : Option (α × QueueData α) :=
     | x :: xs => some (x, ⟨xs, []⟩)
     | []      => none
 
+def QueueData.isEmpty (q: QueueData α) : Bool := 
+  q.init.isEmpty && q.tail.isEmpty
+
 def QueueData.rel (a b : QueueData α): Prop := a.toList = b.toList
 
 def QueueSetoid (α : Type u): Setoid (QueueData α) := {
@@ -46,6 +49,12 @@ def Queue.send (q: Queue α) (x: α): Queue α :=
     simp [QueueSetoid, QueueData.rel, QueueData.toList] at p
     rw [p]
     
+syntax "qsound" : tactic
+
+macro_rules
+  | `(tactic| qsound) => `(tactic| apply Quot.sound; simp [QueueSetoid, QueueData.rel, QueueData.toList])
+
+
 def Queue.pull (q: Queue α) : Option (α × Queue α) :=
   q.lift (fun qd => qd.pull.map (fun (a, xs) => (a, Quot.mk _ xs))) <| by
   simp [HasEquiv.Equiv]
@@ -54,8 +63,8 @@ def Queue.pull (q: Queue α) : Option (α × Queue α) :=
   cases a; case mk ia ta =>
   cases b; case mk ib tb => 
   simp [QueueSetoid, QueueData.rel, QueueData.toList] at p
-  let p1 := congrArg List.reverse p
   cases ia
+  let p1 := congrArg List.reverse p
   . cases ta
     . simp at p
       cases ib
@@ -88,8 +97,7 @@ def Queue.pull (q: Queue α) : Option (α × Queue α) :=
           rw [p.left] 
           simp
           rw [p.right]
-          apply Quot.sound
-          simp [QueueSetoid, QueueData.rel, QueueData.toList]
+          qsound
   . case cons iah iat => 
     cases ib
     . simp at p
@@ -101,20 +109,21 @@ def Queue.pull (q: Queue α) : Option (α × Queue α) :=
         simp at p
         rw [p.left]
         simp
-        apply Quot.sound
-        simp [QueueSetoid, QueueData.rel, QueueData.toList]
+        qsound
         exact p.right
     . case cons ibh ibt =>
       simp at p
       rw [p.left]
       simp [Option.map, QueueData.pull]
-      apply Quot.sound
-      simp [QueueSetoid, QueueData.rel, QueueData.toList]
+      qsound
       exact p.right
 
+def Queue.isEmpty (q: Queue α): Bool := 
+  q.lift (·.isEmpty) <| by admit
 
--- instance: Inhabited (Queue α) where
---   default := ([], [])
+
+instance: Inhabited (Queue α) where
+  default := Quot.mk _ ⟨[], []⟩
 
 
   
