@@ -94,10 +94,6 @@ theorem nonEmptyPull {q: QueueData α} {x : α} {xs: List α}:
       let p5 := congrArg (·.tail) p3
       simp at p4 p5
       rw [p4, p5]
-      
-
-
-
 
 end QueueData
 
@@ -165,7 +161,23 @@ def pull (q: Queue α) : Option (α × Queue α) :=
     rw [p1, p2]
 
 def isEmpty (q: Queue α): Bool := 
-  q.lift (·.isEmpty) <| by admit
+  q.lift (·.isEmpty) <| by
+  intros a b p
+  simp
+  generalize pe: a.isEmpty = ae
+  cases ae
+  . generalize pl: a.toList = al
+    cases al
+    . rewrite [←QueueData.isEmptyToList] at pl
+      rw [pe] at pl
+      contradiction
+    . rw [p] at pl
+      generalize pe2: b.isEmpty = be
+      cases be <;> simp
+      rw [QueueData.isEmptyToList, pl] at pe2
+      contradiction
+  . rw [QueueData.isEmptyToList, p, ←QueueData.isEmptyToList] at pe
+    rw [pe]
 
 
 instance: Inhabited (Queue α) where
