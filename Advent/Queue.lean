@@ -34,7 +34,7 @@ theorem isEmptyToList (q: QueueData α): q.isEmpty <-> q.toList = [] := by
   intro p
   apply nonEmptyAppend p
 
-theorem emptyPull (q: QueueData α): q.toList = [] <-> q.pull = none := by
+theorem emptyPull {q: QueueData α}: q.toList = [] <-> q.pull = none := by
   simp [toList, pull]
   cases q.init <;> cases q.tail <;> simp
   case cons h t => 
@@ -46,6 +46,57 @@ theorem emptyPull (q: QueueData α): q.toList = [] <-> q.pull = none := by
   . generalize up: List.reverse t ++ [h] = u
     intro q
     cases u <;> simp at q <;> simp
+
+theorem nonEmptyPull {q: QueueData α} {x : α} {xs: List α}: 
+  q.toList = x :: xs  <-> (exists (qt: QueueData α), qt.toList = xs ∧ q.pull = some (x, qt)) := by
+  simp [toList, pull]
+  cases q.init 
+  generalize p : q.tail.reverse = tr
+  . cases tr <;> simp
+    . intro e
+      cases e
+      assumption
+    . case cons h t => 
+      constructor
+      . intro p1 
+        exists ⟨ t , []⟩
+        simp [*]
+      . intro qe
+        cases qe with | intro qt p1 => 
+        cases qt with | mk qi qt =>
+        simp [*]
+        let p2 := p1.right.right
+        simp at p1
+        let p3 := congrArg (·.init) p2
+        let p4 := congrArg (·.tail) p2
+        simp at p3 p4
+        rw [← p3, ← p4] at p1
+        simp at p1
+        simp [p1]
+
+  . case cons h t => 
+    simp
+    constructor
+    . intro pp
+      let qt: QueueData α := ⟨ t, q.tail ⟩
+      exists qt
+      simp
+      rw [pp.left, pp.right]    
+      simp
+    . intro qe
+      cases qe with | intro qt pp =>  
+      cases pp with | intro p1 p2 =>
+      cases p2 with | intro p2 p3 => 
+      cases qt with | mk qti qtt => 
+      rw [p2, ← p1]
+      simp
+      let p4 := congrArg (·.init) p3
+      let p5 := congrArg (·.tail) p3
+      simp at p4 p5
+      rw [p4, p5]
+      
+
+
 
 
 end QueueData
@@ -83,74 +134,35 @@ def send (q: Queue α) (x: α): Queue α :=
     simp [QueueSetoid, QueueData.rel, QueueData.toList] at p
     rw [p]
     
-syntax "qsound" : tactic
-
-macro_rules
-  | `(tactic| qsound) => `(tactic| apply Quot.sound; simp [QueueSetoid, QueueData.rel, QueueData.toList])
-
-
 def pull (q: Queue α) : Option (α × Queue α) :=
   q.lift (fun qd => qd.pull.map (fun (a, xs) => (a, Quot.mk _ xs))) <| by
-  simp [HasEquiv.Equiv]
-  unfold Setoid.r
   intros a b p
-  cases a; case mk ia ta =>
-  cases b; case mk ib tb => 
-  simp [QueueSetoid, QueueData.rel, QueueData.toList] at p
-  cases ia
-  let p1 := congrArg List.reverse p
-  . cases ta
-    . simp at p
-      cases ib
-      . cases tb
-        . simp
-        . simp at p1         
-      . contradiction
-    . case cons iah iat =>
-      cases ib
-      . cases tb
-        . simp at p1
-        . case cons tbh tbt =>
-          simp at p1
-          rw [p1.left, p1.right] 
-      . case cons ibh ibt => 
-        simp [Option.map, QueueData.pull]
-        simp at p
-        generalize List.reverse iat = riat at p
-        cases riat
-        . simp at p
-          simp
-          rw [p.left]
-          simp
-          let p2 := List.append_eq_nil p.right
-          let p3 := congrArg List.reverse p2.right
-          simp at p3
-          rw [← p2.left, ← p3]
-        . case cons hriat triat =>
-          simp at p
-          rw [p.left] 
-          simp
-          rw [p.right]
-          qsound
-  . case cons iah iat => 
-    cases ib
-    . simp at p
-      simp [Option.map, QueueData.pull]
-      generalize List.reverse tb = rtb at p
-      cases rtb
-      . simp at p
-      . case cons hrtb trtb => 
-        simp at p
-        rw [p.left]
-        simp
-        qsound
-        exact p.right
-    . case cons ibh ibt =>
-      simp at p
-      rw [p.left]
-      simp [Option.map, QueueData.pull]
-      qsound
-      exact p.right
+  simp 
+  generalize p1: a.isEmpty = aempty
+  cases aempty
+  . generalize p2 : a.toList = al 
+    cases al
+    . rw [← QueueData.isEmptyToList] at p2
+      rw [p1] at p2
+      contradiction
+    . case cons h t => 
+      let p3 := p2
+      rw [QueueData.nonEmptyPull] at p3
+      let p4 := p2
+      rw [p] at p4
+      rw [QueueData.nonEmptyPull] at p4
+      cases p3 with | intro bqa p5 =>
+      cases p4 with | intro bqt p6 =>
+      simp [p5, p6, Option.map]
+      apply Quot.sound
+      simp [QueueSetoid, QueueData.rel]
+      rw [p5.left, p6.left]
+  . rw [QueueData.isEmptyToList] at p1
+    let p2 := p1
+    rw [QueueData.emptyPull] at p2
+    rw [p] at p1
+    rw [QueueData.emptyPull] at p1  
+    rw [p1, p2]
 
 def isEmpty (q: Queue α): Bool := 
   q.lift (·.isEmpty) <| by admit
