@@ -156,8 +156,7 @@ def pull (q: Queue α) : Option (α × Queue α) :=
   . rw [QueueData.isEmptyToList] at p1
     let p2 := p1
     rw [QueueData.emptyPull] at p2
-    rw [p] at p1
-    rw [QueueData.emptyPull] at p1  
+    rw [p, QueueData.emptyPull] at p1
     rw [p1, p2]
 
 def isEmpty (q: Queue α): Bool := 
@@ -179,9 +178,25 @@ def isEmpty (q: Queue α): Bool :=
   . rw [QueueData.isEmptyToList, p, ←QueueData.isEmptyToList] at pe
     rw [pe]
 
+def empty: Queue α :=   Quot.mk _ ⟨[], []⟩
+
+def peak (q: Queue α): Option α := q.pull.map (·.fst)
+
+def tail (q: Queue α): Queue α := (q.pull.map (·.snd) ).getD empty
 
 instance: Inhabited (Queue α) where
-  default := Quot.mk _ ⟨[], []⟩
+  default := empty
 
+instance [ToString α]: ToString (Queue α) where
+  toString q := "Queue" ++ q.toList.toString   
+
+instance [Lean.ToJson α]: Lean.ToJson (Queue α) where
+  toJson q := Lean.ToJson.toJson q.toList
+
+instance : ForIn m (Queue α) α where
+  forIn q b f := q.toList.forIn b f
+
+instance [BEq α] : BEq (Queue α) where
+  beq xs ys := xs.toList == ys.toList
 
 end Queue
