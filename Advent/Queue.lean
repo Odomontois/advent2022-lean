@@ -138,17 +138,14 @@ def pull (q: Queue α) : Option (α × Queue α) :=
   cases aempty
   . generalize p2 : a.toList = al 
     cases al
-    . rw [← QueueData.isEmptyToList] at p2
-      rw [p1] at p2
+    . rw [← QueueData.isEmptyToList, p1] at p2
       contradiction
     . case cons h t => 
       let p3 := p2
       rw [QueueData.nonEmptyPull] at p3
-      let p4 := p2
-      rw [p] at p4
-      rw [QueueData.nonEmptyPull] at p4
+      rw [p, QueueData.nonEmptyPull] at p2
       cases p3 with | intro bqa p5 =>
-      cases p4 with | intro bqt p6 =>
+      cases p2 with | intro bqt p6 =>
       simp [p5, p6, Option.map]
       apply Quot.sound
       simp [QueueSetoid, QueueData.rel]
