@@ -1,6 +1,9 @@
 import Advent
 import Lean
 
+
+open List (cons)
+
 class Visible (α β : Type _) where
   vision: List α -> List β
   combine: β -> β -> β

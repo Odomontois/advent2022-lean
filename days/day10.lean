@@ -16,7 +16,6 @@ def main : IO Unit := do
   IO.println ress
   IO.println ress.sum
   let pos := res.enum.map (fun (i, x) => if (x - i.mod 40).abs <? 2 then '#' else '.')
-  IO.println res
   let posLines := pos.group 40 |> List.map String.mk 
   posLines.forM IO.println
 

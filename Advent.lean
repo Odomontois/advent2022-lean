@@ -5,3 +5,4 @@ import Advent.Ord
 import Advent.Parse
 import Advent.Read
 import Advent.Function
+import Advent.Queue
