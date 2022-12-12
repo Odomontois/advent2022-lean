@@ -46,8 +46,6 @@ def Queue.send (q: Queue α) (x: α): Queue α :=
     simp [QueueSetoid, QueueData.rel, QueueData.toList] at p
     rw [p]
     
-
-
 def Queue.pull (q: Queue α) : Option (α × Queue α) :=
   q.lift (fun qd => qd.pull.map (fun (a, xs) => (a, Quot.mk _ xs))) <| by
   simp [HasEquiv.Equiv]
@@ -92,7 +90,27 @@ def Queue.pull (q: Queue α) : Option (α × Queue α) :=
           rw [p.right]
           apply Quot.sound
           simp [QueueSetoid, QueueData.rel, QueueData.toList]
-  . admit
+  . case cons iah iat => 
+    cases ib
+    . simp at p
+      simp [Option.map, QueueData.pull]
+      generalize List.reverse tb = rtb at p
+      cases rtb
+      . simp at p
+      . case cons hrtb trtb => 
+        simp at p
+        rw [p.left]
+        simp
+        apply Quot.sound
+        simp [QueueSetoid, QueueData.rel, QueueData.toList]
+        exact p.right
+    . case cons ibh ibt =>
+      simp at p
+      rw [p.left]
+      simp [Option.map, QueueData.pull]
+      apply Quot.sound
+      simp [QueueSetoid, QueueData.rel, QueueData.toList]
+      exact p.right
 
 
 -- instance: Inhabited (Queue α) where
