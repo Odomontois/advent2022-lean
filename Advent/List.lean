@@ -35,6 +35,8 @@ def List.scanl (xs: List α) (f: β -> α -> β) (init: β): List β :=
 
 def List.sum [HAdd α α α] [OfNat α 0] (xs: List α): α := xs.foldl (· + ·) 0
 
+def List.product [HMul α α α] [OfNat α 1] (xs: List α): α := xs.foldl (· * ·) 1
+
 def List.append_eq_nil {xs ys : List α} : [] = xs ++ ys -> [] = xs /\ [] = ys := by
   intro p
   cases xs
