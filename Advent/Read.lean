@@ -12,5 +12,7 @@ def readInput (i: Int) : IO String := do
 
 
 def readLines (i: Int) : IO (List String) := do
-  let input <- readInput i
-  return (String.splitOn input "\n")
+  (readInput i).map (·.splitOn "\n")
+
+def readBlocks (i: Int) : IO (List (List String)) := 
+  (readLines i).map (·.groupBy (· != "" && · != "") |> (·.filter (· != [""])))
