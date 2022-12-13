@@ -98,7 +98,7 @@ def handleRounds (op: Nat -> Nat) (n: Nat) (monkeys: Monkeys): IO Unit := do
 
   IO.println final
 
-  let levels := final.qsort (· >? ·)
+  let levels := final.qsort (· > ·)
                 |> Array.toList 
                 |> List.take 2
                 |> List.product
