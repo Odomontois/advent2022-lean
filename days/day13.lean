@@ -26,7 +26,7 @@ theorem multNotSingle (xs): ¬ IsSingle (Multiple xs) := by
   cases ex
   contradiction
 
-def isSingle: (p: Packet) -> Decidable p.IsSingle
+def isSingle?: (p: Packet) -> Decidable p.IsSingle
 | Single n => Decidable.isTrue (Exists.intro n (Eq.refl _))
 | Multiple xs => Decidable.isFalse <| multNotSingle xs
 
@@ -97,7 +97,7 @@ private theorem sum_lt' (x y: Nat): x < y + x + 1 := by
 
 mutual
   def comparePacket (xp yp : Packet): Ordering  :=
-  match xp.isSingle &&& yp.isSingle with
+  match xp.isSingle? &&& yp.isSingle? with
   | isTrue p => 
     match xp, yp with
     | Single x, Single y => compare x y 
