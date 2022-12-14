@@ -76,8 +76,8 @@ theorem children_levels {x y : Packet} (p: ¬ (x.IsSingle ∧ y.IsSingle)) : lev
       apply children_mult_levels
   . case Multiple xs =>
       conv => 
-       lhs
-       rw [Nat.add_comm] 
+        lhs
+        rw [Nat.add_comm] 
       conv => 
         rhs
         rw [Nat.add_comm] 
@@ -85,16 +85,12 @@ theorem children_levels {x y : Packet} (p: ¬ (x.IsSingle ∧ y.IsSingle)) : lev
 
 
   
-theorem sum_lt (x y: Nat): x < x + y + 1 := by 
-  induction y 
-  . simp 
-    apply Nat.lt_succ_self
-  . apply Nat.lt_succ_of_le
-    simp
-    apply Nat.le_of_lt
-    assumption
+private theorem sum_lt (x y: Nat): x < x + y + 1 := by 
+  rw [Nat.add_assoc]
+  apply @Nat.add_lt_add_left 0
+  apply Nat.zero_lt_succ
 
-theorem sum_lt' (x y: Nat): x < y + x + 1 := by 
+private theorem sum_lt' (x y: Nat): x < y + x + 1 := by 
   rw [Nat.add_comm y x]
   apply sum_lt
 
