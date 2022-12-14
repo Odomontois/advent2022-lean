@@ -105,7 +105,6 @@ mutual
     | _, Multiple ys => absurd p.right <| multNotSingle ys
   | isFalse p => 
     have := children_levels p
-    let _ := Nat.lt
     comparePackets xp.children yp.children
 
   def comparePackets: List Packet -> List Packet -> Ordering 
