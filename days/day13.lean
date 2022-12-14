@@ -19,19 +19,96 @@ def children : Packet -> List Packet
 | Single x => [Single x]
 | Multiple xs => xs
 
-mutual
-  partial def comparePacket: Packet -> Packet -> Ordering
-  | Single x, Single y => compare x y 
-  | xp, yp => comparePackets xp.children yp.children
+abbrev IsSingle(p: Packet) := ∃ n, p = Single n
 
-  partial def comparePackets: List Packet -> List Packet -> Ordering 
-  | x :: xs, y :: ys => match comparePacket x y with 
+theorem multNotSingle (xs): ¬ IsSingle (Multiple xs) := by
+  intros ex
+  cases ex
+  contradiction
+
+def isSingle: (p: Packet) -> Decidable p.IsSingle
+| Single n => Decidable.isTrue (Exists.intro n (Eq.refl _))
+| Multiple xs => Decidable.isFalse <| multNotSingle xs
+
+mutual 
+def level: Packet -> Nat 
+| Single _ => 0
+| Multiple xs => levels xs + 2
+
+
+def levels: List Packet -> Nat
+| [] => 0
+| x :: xs => x.level + (levels xs) + 1
+end
+
+theorem children_mult_levels {x : Packet} {ys : List Packet}: levels (children x) + levels ys < x.level + (Multiple ys).level := by admit 
+
+theorem children_levels {x y : Packet} (p: ¬ (x.IsSingle ∧ y.IsSingle)) : levels x.children + levels y.children < x.level + y.level := by
+  cases x 
+  . case Single x =>
+    cases y
+    . case Single y =>
+      apply False.elim
+      apply p
+      constructor
+      . exists x
+      . exists y
+    . case Multiple ys => 
+      apply children_mult_levels
+  . case Multiple xs =>
+      conv => 
+       lhs
+       rw [Nat.add_comm] 
+      conv => 
+        rhs
+        rw [Nat.add_comm] 
+      apply children_mult_levels
+
+
+  
+theorem sum_lt (x y: Nat): x < x + y + 1 := by 
+  induction y 
+  . simp 
+    apply Nat.lt_succ_self
+  . apply Nat.lt_succ_of_le
+    simp
+    apply Nat.le_of_lt
+    assumption
+
+theorem sum_lt' (x y: Nat): x < y + x + 1 := by 
+  rw [Nat.add_comm y x]
+  apply sum_lt
+
+
+mutual
+  def comparePacket (xp yp : Packet): Ordering  :=
+  match xp.isSingle &&& yp.isSingle with
+  | isTrue p => 
+    match xp, yp with
+    | Single x, Single y => compare x y 
+    | Multiple xs , _ => absurd p.left <| multNotSingle xs 
+    | _, Multiple ys => absurd p.right <| multNotSingle ys
+  | isFalse p => 
+    have := children_levels p
+    let _ := Nat.lt
+    comparePackets xp.children yp.children
+
+  def comparePackets: List Packet -> List Packet -> Ordering 
+  | x :: xs, y :: ys => 
+    have: level x + level y < levels (x :: xs) + levels (y :: ys) := by 
+      apply Nat.add_lt_add <;> simp [levels] <;> apply sum_lt
+    have: levels xs + levels ys < levels (x :: xs) + levels (y :: ys) := by 
+      apply Nat.add_lt_add <;> simp [levels] <;> apply sum_lt'
+    match comparePacket x y with 
     | Ordering.eq => comparePackets xs ys
     | other => other
   | [], [] => Ordering.eq  
   | _ :: _, [] => Ordering.gt
   | [], _ :: _ => Ordering.lt
 end 
+termination_by 
+  comparePacket x y => x.level + y.level
+  comparePackets xs ys => levels xs + levels ys
 
 instance : Ord Packet where
   compare := comparePacket

@@ -6,3 +6,4 @@ import Advent.Parse
 import Advent.Read
 import Advent.Function
 import Advent.Queue
+import Advent.Decidable
