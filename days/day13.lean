@@ -41,7 +41,26 @@ def levels: List Packet -> Nat
 | x :: xs => x.level + (levels xs) + 1
 end
 
-theorem children_mult_levels {x : Packet} {ys : List Packet}: levels (children x) + levels ys < x.level + (Multiple ys).level := by admit 
+theorem children_mult_levels {x : Packet} {ys : List Packet}: levels (children x) + levels ys < x.level + (Multiple ys).level := by 
+  cases x <;> simp [children, levels, level]
+  . case Single x => 
+    rw [Nat.add_comm]
+    apply Nat.lt_succ_self
+  . case Multiple xs => 
+    conv => 
+      rhs
+      rw [Nat.add_assoc]
+      conv => 
+        rhs
+        rw [← Nat.add_assoc]
+        conv => 
+          lhs
+          rw [Nat.add_comm]  
+        rw [Nat.add_assoc]
+        simp [Nat.add]
+      rw [←Nat.add_assoc]
+    apply @Nat.add_lt_add_left 0
+    apply Nat.zero_lt_succ
 
 theorem children_levels {x y : Packet} (p: ¬ (x.IsSingle ∧ y.IsSingle)) : levels x.children + levels y.children < x.level + y.level := by
   cases x 
