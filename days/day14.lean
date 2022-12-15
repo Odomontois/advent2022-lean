@@ -29,13 +29,13 @@ def rocks (acc: List Band) (band: Band): Band :=
 def buildMap (b: Band): Nat × Map := 
   let xs := b.map (·.fst)
   let ys := b.map (·.snd)
-  let xFrom := xs.minimum?.get! - 1
-  let xTo := xs.maximum?.get! + 1
+  let xFrom := 0
+  let xTo := xs.maximum?.get! * 2
   let yFrom := 0
   let yTo := ys.maximum?.get! + 1
-  let arr := Array.mkArray (yTo - yFrom + 2) <| Array.mkArray (xTo - xFrom + 2) ' '
-  let res := b.foldl (fun arr (x, y) => arr.modify (y - yFrom + 1) (·.set! (x - xFrom + 1) '#') ) arr
-  let sx := 500 - xFrom + 1
+  let arr := Array.mkArray (yTo - yFrom + 1) <| Array.mkArray (xTo - xFrom + 2) ' '
+  let res := b.foldl (fun arr (x, y) => arr.modify (y - yFrom) (·.set! (x - xFrom) '#') ) arr
+  let sx := 500 - xFrom
   (sx, res.modify 0 (·.set! sx '+'))
 
 mutual 
@@ -45,7 +45,7 @@ partial def zand (x y: Nat): StateM Map Char := do
   then return '~'
   
   let cur := m[y]![x]!
-  if cur != ' ' then return cur
+  if cur != ' ' && cur != '+' then return cur
 
   let mine <- zandFlow x y
   StateM.update <| (·.modify y (·.set! x mine))
@@ -63,16 +63,28 @@ partial def zandFlow (x y: Nat): StateM Map Char := do
   return 'o'  
 end
 
+def showMap (m: Map): IO Unit := do
+  for l in m do
+    IO.println <| String.mk <| l.toList
+
+def sandCount(m: Map) := m.foldl (· + ·.foldl (· + if · == 'o' then 1 else 0) 0) 0
+
+
 def main : IO Unit := do
   let lines <- readLines 14
   let bands := lines.map band
   let rs := bands.bind (rocks [])
   let (sx, map) := buildMap rs
-  let (_, res) := zandFlow sx 0 map
-  let showMap := res.map (String.mk <| ·.toList) 
-  let sand := res.foldl (· + ·.foldl (· + if · == 'o' then 1 else 0) 0) 0
-  showMap.forM IO.println
-  IO.println sand
+  let (_, res) := zand sx 0 map
+
+  IO.println <| sandCount res
+
+  let floorMap := map.push (Array.mkArray map[0]!.size '#')
+  let (_, floorRes) := zand sx 0 floorMap
+  -- showMap floorRes
+
+  IO.println <| sandCount floorRes
+
 
 
 

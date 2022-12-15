@@ -10,9 +10,12 @@ def readInput (i: Int) : IO String := do
   let path := s!"./{dir}/day{i}{suffix}.txt"
   IO.FS.readFile path
 
+def br: String := "\n"
 
 def readLines (i: Int) : IO (List String) := do
-  (readInput i).map (·.splitOn "\n")
+  (readInput i).map (·.splitOn br)
 
-def readBlocks (i: Int) : IO (List (List String)) := 
-  (readLines i).map (·.groupBy (· != "" && · != "") |> (·.filter (· != [""])))
+def readBlockLines (i: Int): IO (List String) := (readInput i).map (·.splitOn (br ++ br))
+
+def readBlocks (i: Int) : IO (List (List String)) := (readBlockLines i).map (·.map (·.splitOn br))
+

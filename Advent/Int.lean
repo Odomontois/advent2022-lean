@@ -1,8 +1,12 @@
 open Ordering 
+namespace Int
+def signum: Int -> Int
+| ofNat 0 => 0
+| ofNat (Nat.succ _) => 1
+| negSucc _ => -1
 
-def Int.signum(x: Int) :Int := match compare x 0 with
-| lt => -1
-| eq => 0
-| gt => 1
+def abs: Int -> Nat
+| ofNat x => x
+| negSucc y => y + 1
 
-def Int.abs(x: Int) := x * signum x
+end Int
