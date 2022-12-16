@@ -29,7 +29,7 @@ variable (p: Parse α)
 def str (txt: String): Parse Unit := λ s => 
   if s.startsWith txt 
   then  ok () <| s.drop txt.length
-  else error s!"expecting {txt}" s
+  else error s!"expecting '{txt}'" s
 
 def strChain (txts: List (List String)): Parse Unit := 
   txts.forM (·.foldl (· ||| str ·) (throw ""))
@@ -46,8 +46,8 @@ def attempt (err: β -> String) (parse: β -> Option α) (b: β) : Parse α := m
 | some x => pure x
 | none => throw <| err b
 
-def int : Parse Int := seg (λ c => c.isDigit || c == '-') >>= attempt (s!"{·} is not an integer") (·.toInt?)
-def nat : Parse Nat := seg (·.isDigit) >>= attempt (s!"{·} is not a natural") (·.toNat!)
+def int : Parse Int := seg (λ c => c.isDigit || c == '-') >>= attempt (s!"'{·}' is not an integer") (·.toInt?)
+def nat : Parse Nat := seg (·.isDigit) >>= attempt (s!"'{·}' is not a natural") (·.toNat!)
 
 def ws: Parse Unit := EStateM.modifyGet ((), ·.trimLeft)
 
@@ -74,7 +74,10 @@ def repSep! (sep: String): Parse (List α) := do
 def runE (s: String):  (String × Except String α) := 
   match p s with
   | ok a s' => (s', pure a)
-  | error err s' => (s', throw err)
+  | error s' err => (s', throw err)
 
-
+def runIO (s: String): IO α :=
+  match p s with 
+  | ok a _ => (return a)
+  | error (err: String) s' => throw <| IO.userError s!" error \"{err}\" during parsing \"{s'}\""
 end Parse

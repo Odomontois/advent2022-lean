@@ -1,5 +1,4 @@
 import Advent
-
 def parse (cmd: String): List (Option Int) :=
   match cmd.splitOn with 
   | ["addx", s] => [none, s.toInt?]

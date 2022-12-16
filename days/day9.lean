@@ -1,5 +1,6 @@
 import Advent
 import Lean
+import Std
 
 abbrev Point := Int × Int
 abbrev HT := Point × List Point

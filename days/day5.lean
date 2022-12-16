@@ -1,4 +1,5 @@
 import Advent
+import Std
 
 notation "Move" => Nat × Nat × Nat
 notation "Stack" => List (Option Char)
@@ -17,7 +18,7 @@ def parseStacks (acc: List Stack): List String -> Stacks × List String
     | some line  => parseStacks (line :: acc) rest
     | none       => final rest
   | [] =>  final [] 
-where final (rem: List String) := ((acc.transposeRev.map (·.filterMap (·))).toArray, rem)
+where final (rem: List String) := ((acc.transpose.reverse.map (·.filterMap (·))).toArray, rem)
 
 
 def parseMove (s: String): Option Move := 

@@ -177,5 +177,5 @@ def main : IO Unit := do
                   |> List.filterMap (sortedPackets.indexOf? ·) 
                   |> List.map (·.val + 1)
   IO.println sepIndex
-  IO.println sepIndex.product
+  IO.println sepIndex.prod
   

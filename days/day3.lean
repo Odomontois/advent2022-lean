@@ -1,5 +1,6 @@
 import Advent
 import Lean
+import Std
 
 def charCode (c: Char) : Nat := 
   if c <= 'Z' then c.toNat - 'A'.toNat + 27 else c.toNat - 'a'.toNat + 1
