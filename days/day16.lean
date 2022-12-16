@@ -60,7 +60,10 @@ namespace Position
     opened := pos.opened ||| (1 <<< pos.cur)
   }
 
-  def goToElephant (i: Nat): Position :=  { pos with  elephant := i }
+  def goToElephant (s: Nat) (i: Nat): Position :=  { pos with 
+      elephant := i 
+      time := pos.time - s
+    }
 
   def goTo (s: Nat) (i: Nat): Position :=  {
     pos with 
@@ -135,7 +138,7 @@ mutual
 def maxFlowElephant (pipes: Pipes)  (flow: Nat) (pos: Position): Search Nat :=
   match decidable (0 < pos.time) with 
       | isFalse _ => pure 0
-      | isTrue q => do
+      | isTrue _ => do
 
     let c <- StateT.get
 
@@ -149,12 +152,16 @@ def maxFlowElephant (pipes: Pipes)  (flow: Nat) (pos: Position): Search Nat :=
       have : 2 * pos.openCurElephant.time < 2 * pos.time + 1 := by
         simp [Position.openCurElephant] 
 
-      res <- maxFlowYou pipes (flow + curFlow) pos.openCurElephant  q
+      res <- maxFlowYou pipes (flow + curFlow) pos.openCurElephant
 
     for (s, i) in pipes[pos.elephant]!.next do
-      have : 2 * (pos.goToElephant i).time < 2 * pos.time + 1 := by 
-        simp [Position.goToElephant]
-      let step <- maxFlowYou pipes flow (pos.goToElephant i) q
+      have : 2 * (pos.goToElephant s i).time < 2 * pos.time + 1 := by 
+        simp [Position.goToElephant]; 
+        rw [Nat.mul_sub_left_distrib]
+        apply Nat.lt_succ_of_le
+        apply @Nat.sub_le_sub_left 0
+        apply Nat.zero_le
+      let step <- maxFlowYou pipes flow (pos.goToElephant s i)
       res := max res step
 
     res := res + flow
@@ -163,7 +170,10 @@ def maxFlowElephant (pipes: Pipes)  (flow: Nat) (pos: Position): Search Nat :=
 
     return res
 
-def maxFlowYou (pipes: Pipes) (flow: Nat) (pos: Position) (qt : pos.time > 0): Search Nat := do
+def maxFlowYou (pipes: Pipes) (flow: Nat) (pos: Position): Search Nat := 
+  match decidable (0 < pos.time) with
+    | isFalse _ => pure 0
+    | isTrue q => do
     let mut res := 0
 
     if !pos.curOpened? && pipes[pos.cur]!.flow > 0 then 
@@ -182,8 +192,8 @@ def maxFlowYou (pipes: Pipes) (flow: Nat) (pos: Position) (qt : pos.time > 0): S
     return res
 end
 termination_by 
-  maxFlowYou _  _ pos _ => 2 * pos.time
-  maxFlowElephant pos => 2 * pos.time + 1
+  maxFlowYou _  _ pos => 2 * pos.time
+  maxFlowElephant _ _ pos => 2 * pos.time + 1
 
 
 def runMaxFlow pipes time  := 
