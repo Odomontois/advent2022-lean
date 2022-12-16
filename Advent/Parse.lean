@@ -20,44 +20,61 @@ instance : EStateM.Backtrackable String ParseState where
 
 open EStateM.Result 
 namespace Parse
-def fromOption (err: Unit -> String): Option α -> Parse α
-| some x => pure x
-| none => throw <| err ()
+
+instance {α}: HOr (Parse α) (Parse α) (Parse α) where
+  hOr x y := try x catch _ => y
+
+variable (p: Parse α)
 
 def str (txt: String): Parse Unit := λ s => 
   if s.startsWith txt 
   then  ok () <| s.drop txt.length
-  else error s s!"expecting {txt}"
-    
+  else error s!"expecting {txt}" s
+
+def strChain (txts: List (List String)): Parse Unit := 
+  txts.forM (·.foldl (· ||| str ·) (throw ""))
 
 def take (i: Nat): Parse String := λ s => ok (s.take i) (s.drop i)
 
-
-def segment (p: Char -> Bool) (err: String -> String) (parse: String -> Option α): Parse α := do
+def seg (p: Char -> Bool): Parse String := do
   let s <- EStateM.get
   let i := s.nextWhile p 0
-  let s <- take i.byteIdx
-  fromOption (λ_ => err s) (parse s) 
+  if i == 0 then throw s!"incorrect character"
+  take i.byteIdx
 
-def nat : Parse Nat := segment (·.isDigit) (s!"{·} is not a natural") (·.toNat!)
+def attempt (err: β -> String) (parse: β -> Option α) (b: β) : Parse α := match parse b with
+| some x => pure x
+| none => throw <| err b
 
-def int : Parse Int := segment (λ c => c.isDigit || c == '-') (s!"{·} is not an integer") (·.toInt?)
+def int : Parse Int := seg (λ c => c.isDigit || c == '-') >>= attempt (s!"{·} is not an integer") (·.toInt?)
+def nat : Parse Nat := seg (·.isDigit) >>= attempt (s!"{·} is not a natural") (·.toNat!)
 
 def ws: Parse Unit := EStateM.modifyGet ((), ·.trimLeft)
 
 partial def rep (p: Parse α): Parse (List α) := do
   let a <- try p catch _ => return []
   let as <- p.rep
-  return  a :: as
+  return a :: as
 
-def repSep (p: Parse α) (sep: String): Parse (List α) := do
+def opt: Parse (Option α) := 
+  try some <$> p catch _ => return none
+
+def optu: Parse Unit := try  _ <- p catch _ => return
+
+def repSep (sep: String): Parse (List α) := do
   let first <- try p catch _ => return []
   let rest <- (str sep *> p).rep
   return first :: rest
-  
 
-def runE (p: Parse α) (s: String):  (String × Except String α) := 
+def repSep! (sep: String): Parse (List α) := do
+  let first <- p
+  let rest <- (str sep *> p).rep
+  return first :: rest
+
+def runE (s: String):  (String × Except String α) := 
   match p s with
   | ok a s' => (s', pure a)
   | error err s' => (s', throw err)
+
+
 end Parse

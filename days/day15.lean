@@ -1,5 +1,6 @@
 import Advent
 
+
 abbrev Point := Int × Int
 
 inductive Event |start | stop | beac
@@ -16,8 +17,8 @@ deriving Inhabited, Lean.ToJson
 
 
 structure Rectangle where
-  tl: Point
-  br: Point
+  topLeft: Point
+  bottomRight: Point
 deriving Inhabited, Lean.ToJson
 
 namespace Sensor
@@ -73,21 +74,21 @@ namespace Rectangle
   variable (r: Rectangle)
   
   def area: Nat := 
-    (r.tl.snd - r.br.snd).abs * (r.tl.fst - r.br.fst).abs
+    (r.topLeft.snd - r.bottomRight.snd).abs * (r.topLeft.fst - r.bottomRight.fst).abs
 
-  def points : List Point := [r.tl, r.br]
+  def points : List Point := [r.topLeft, r.bottomRight]
 
-  def hor: Segment := ⟨ r.tl.fst, r.br.fst ⟩
+  def hor: Segment := ⟨ r.topLeft.fst, r.bottomRight.fst ⟩
 
-  def vert: Segment := ⟨ r.tl.snd, r.br.snd ⟩
+  def vert: Segment := ⟨ r.topLeft.snd, r.bottomRight.snd ⟩
 
   def contains (p: Point): Bool := 
     r.hor.contains p.fst && r.vert.contains p.snd   
 
   def corners: Id (Array Point) := do
     let mut res := Array.empty
-    for x in [r.tl.fst, r.br.fst] do
-      for y in [r.tl.snd, r.br.snd] do
+    for x in [r.topLeft.fst, r.bottomRight.fst] do
+      for y in [r.topLeft.snd, r.bottomRight.snd] do
         res := res.push (x, y)
     res
   
@@ -156,7 +157,11 @@ def countIntervals (xs: Array (Int × Event)) : Id Int := do
 instance : Ord (Int × Event) := lexOrd 
 instance : LE (Int × Event) := leOfOrd
 
+
+
+
 def main : IO Unit := do
+
   let lines <- readLines 15
   -- for l in lines do
   --   IO.println <| parseLine.runE l
@@ -168,17 +173,14 @@ def main : IO Unit := do
                    |> (·.qsort (· <= ·))
   IO.println intervals
   IO.println <| countIntervals intervals
-
-  let r1 :=  {tl := (0, 0), br := (10, 10) : Rectangle }
-  let r2 :=  {tl := (-1, -1), br := (11, 11) : Rectangle }
-
+  
   let start := Rectangle.mk (0, - 2 * y) (4 * y + 1, 2 * y + 1)
 
   let rects := sensors.foldl (fun rs s => rs.bind (·.cut s.rotate)) [start]
   
   let unite := rects.filter (·.area == 1)
 
-  let goodPoints := unite.map (unrotate ·.tl)
+  let goodPoints := unite.map (unrotate ·.topLeft)
 
   let freqs := goodPoints.map (fun (x, y) => x * 4000000 + y)
  
