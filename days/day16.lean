@@ -7,7 +7,7 @@ open Lean (HashMap)
 structure Pipe (α : Type) where
   name: α
   flow: Nat
-  next: List (Nat × α)
+  next: List α
   flowIdx: Nat := 0
 deriving Inhabited, Lean.ToJson
 
@@ -21,7 +21,7 @@ def parsePipe: Parse (Pipe String) := open Parse in do
   str "; "
   str "tunnels lead to valves " ||| str "tunnel leads to valve "
   let next <- pipeName.repSep! ", "  
-  return ⟨ name, flow, next.map ((0, ·)), 0 ⟩
+  return ⟨ name, flow, next, 0 ⟩
 
 -- optimization to use indices instead of names
 def reindexPipes [Hashable α] [BEq α] (pipes: Array (Pipe α)): Id (Array (Pipe Nat)) := do
@@ -32,58 +32,32 @@ def reindexPipes [Hashable α] [BEq α] (pipes: Array (Pipe α)): Id (Array (Pip
   
   pipes.map <| λ p => { p with 
     name := names[p.name].get!
-    next := p.next.map (λ (s, n) => (s, names[n].get!))
+    next := p.next.map (names[·].get!)
   }
 
 abbrev Pipes := Array (Pipe Nat)
 
 structure Position where
-  opened: Nat := 0-- bitArray
+  opened: Nat := 0 -- bitArray
   cur: Nat := 0
-  elephant: Nat := 0
   time: Nat := 30
-deriving BEq, Hashable, Lean.ToJson
-
+deriving BEq, Hashable
 namespace Position 
   variable (pos: Position)
   variable (pipes: Pipes)
 
   def curOpened? : Bool := pos.opened &&& (1 <<< pipes[pos.cur]!.flowIdx) != 0
 
-  def elephantOpened?: Bool := pos.opened &&& ( 1 <<< pos.elephant) != 0
-
-  def openCurElephant : Position := { pos with 
-    opened := pos.opened ||| (1 <<< pos.elephant)
-  }
-
   def openCur: Position := { pos with 
     time := pos.time - 1
     opened := pos.opened ||| (1 <<< pipes[pos.cur]!.flowIdx)
   }
 
-  def goToElephant (s: Nat) (i: Nat): Position :=  { pos with 
-      elephant := i 
-      time := pos.time - s
-    }
-
-  def goTo (s: Nat) (i: Nat): Position :=  {
+  def goTo (i: Nat): Position :=  {
     pos with 
-    time := pos.time - (s + 1)
+    time := pos.time - 1
     cur := i
   }
-
-  theorem twiceLess {qt : pos.time > 0} (s : Nat) :  2 * (pos.time - (s + 1)) + 1 < 2 * pos.time := by
-    generalize p: pos.time = x at qt
-    cases x <;> simp 
-    . contradiction
-    . case succ x => 
-        rw [Nat.mul_sub_left_distrib]
-        simp [HMul.hMul, Mul.mul, Nat.mul]
-        apply Nat.lt_of_succ_le
-        apply Nat.add_le_add_right _ 2
-        apply @Nat.sub_le_sub_left 0
-        apply Nat.zero_le
-         
 end Position
 
 
@@ -92,11 +66,7 @@ abbrev Cache.Key := Position
 
 def Cache := HashMap Cache.Key Cache.Value
 
-namespace Cache
-  variable (cache: Cache)
-
-  def init: Cache := HashMap.empty
-end Cache
+def Cache.init: Cache := HashMap.empty
 
 abbrev Search α := StateM Cache α
 
@@ -120,14 +90,14 @@ def maxFlow (pipes: Pipes) (pos: Position): Search Nat :=
       let next <- maxFlow pipes <| pos.openCur pipes
       res := next + curFlow
 
-    for (s, i) in pipes[pos.cur]!.next do
-      have: (pos.goTo s i).time < pos.time := by 
+    for i in pipes[pos.cur]!.next do
+      have: (pos.goTo i).time < pos.time := by 
         simp [Position.goTo] ; 
         apply @Nat.sub_lt_sub_left 0
         . assumption
         . apply Nat.zero_lt_of_ne_zero
           intro ; contradiction
-      let step <- maxFlow pipes <| pos.goTo s i 
+      let step <- maxFlow pipes <| pos.goTo i 
       res := max res step
 
     res := res
@@ -160,9 +130,6 @@ def sumFlow (results: List Nat) : Id (Nat × Nat × Nat) := do
         bestJ := j
   return (best, bestI, bestJ)
 
-
-
-
 def main: IO Unit := do
   let lines <- readLines 16
   let ls <- lines.mapM parsePipe.runIO 
@@ -175,8 +142,6 @@ def main: IO Unit := do
   let (res, c) := runMaxFlow pipes 30 0 Cache.init
   IO.println res
   IO.println c.size
-  let (allRes, c) := runAllFlows pipes 26 Cache.init
-  -- allRes.enum.forM IO.println
+  let (allRes, _) := runAllFlows pipes 26 Cache.init
   IO.println allRes.length
   IO.println <| sumFlow allRes
-  IO.println c.size
