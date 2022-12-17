@@ -46,8 +46,9 @@ deriving BEq, Hashable, Lean.ToJson
 
 namespace Position 
   variable (pos: Position)
+  variable (pipes: Pipes)
 
-  def curOpened?: Bool := pos.opened &&& (1 <<< pos.cur) != 0
+  def curOpened? : Bool := pos.opened &&& (1 <<< pipes[pos.cur]!.flowIdx) != 0
 
   def elephantOpened?: Bool := pos.opened &&& ( 1 <<< pos.elephant) != 0
 
@@ -55,9 +56,9 @@ namespace Position
     opened := pos.opened ||| (1 <<< pos.elephant)
   }
 
-  def openCur : Position := { pos with 
+  def openCur: Position := { pos with 
     time := pos.time - 1
-    opened := pos.opened ||| (1 <<< pos.cur)
+    opened := pos.opened ||| (1 <<< pipes[pos.cur]!.flowIdx)
   }
 
   def goToElephant (s: Nat) (i: Nat): Position :=  { pos with 
@@ -101,7 +102,7 @@ abbrev Search α := StateM Cache α
 
 def decidable (P: Prop) [inst: Decidable P]: Decidable P := inst
 
-def maxFlow (pipes: Pipes) (flow: Nat) (pos: Position): Search Nat :=
+def maxFlow (pipes: Pipes) (pos: Position): Search Nat :=
   match decidable (0 < pos.time) with 
       | isFalse _ => pure 0
       | isTrue _ => do
@@ -113,9 +114,11 @@ def maxFlow (pipes: Pipes) (flow: Nat) (pos: Position): Search Nat :=
 
     let mut res := 0
 
-    if !pos.curOpened? && pipes[pos.cur]!.flow > 0 then 
-      let curFlow := pipes[pos.cur]!.flow
-      res <- maxFlow pipes (flow + curFlow) pos.openCur
+    if pipes[pos.cur]!.flow > 0 && !pos.curOpened? pipes then 
+      let curFlow := (pos.time - 1) * pipes[pos.cur]!.flow
+
+      let next <- maxFlow pipes <| pos.openCur pipes
+      res := next + curFlow
 
     for (s, i) in pipes[pos.cur]!.next do
       have: (pos.goTo s i).time < pos.time := by 
@@ -124,83 +127,41 @@ def maxFlow (pipes: Pipes) (flow: Nat) (pos: Position): Search Nat :=
         . assumption
         . apply Nat.zero_lt_of_ne_zero
           intro ; contradiction
-      let step <- maxFlow pipes flow <| pos.goTo s i 
+      let step <- maxFlow pipes <| pos.goTo s i 
       res := max res step
 
-    res := res + flow
+    res := res
 
     StateM.update (·.insert pos res)
 
     return res
-termination_by maxFlow _ _ pos => pos.time
-
-mutual 
-def maxFlowElephant (pipes: Pipes)  (flow: Nat) (pos: Position): Search Nat :=
-  match decidable (0 < pos.time) with 
-      | isFalse _ => pure 0
-      | isTrue _ => do
-
-    let c <- StateT.get
-
-    if let some res := c.find? pos
-    then return res
-
-    let mut res := 0
-
-    if !pos.elephantOpened? && pipes[pos.elephant]!.flow > 0 then 
-      let curFlow := pipes[pos.elephant]!.flow
-      have : 2 * pos.openCurElephant.time < 2 * pos.time + 1 := by
-        simp [Position.openCurElephant] 
-
-      res <- maxFlowYou pipes (flow + curFlow) pos.openCurElephant
-
-    for (s, i) in pipes[pos.elephant]!.next do
-      have : 2 * (pos.goToElephant s i).time < 2 * pos.time + 1 := by 
-        simp [Position.goToElephant]; 
-        rw [Nat.mul_sub_left_distrib]
-        apply Nat.lt_succ_of_le
-        apply @Nat.sub_le_sub_left 0
-        apply Nat.zero_le
-      let step <- maxFlowYou pipes flow (pos.goToElephant s i)
-      res := max res step
-
-    res := res + flow
-
-    StateM.update (·.insert pos res)
-
-    return res
-
-def maxFlowYou (pipes: Pipes) (flow: Nat) (pos: Position): Search Nat := 
-  match decidable (0 < pos.time) with
-    | isFalse _ => pure 0
-    | isTrue q => do
-    let mut res := 0
-
-    if !pos.curOpened? && pipes[pos.cur]!.flow > 0 then 
-      let curFlow := pipes[pos.cur]!.flow
-      have: 2 * pos.openCur.time + 1 < 2 * pos.time := by 
-        simp [Position.openCur] ; apply Position.twiceLess ; assumption
-
-      res <- maxFlowElephant pipes (flow + curFlow) pos.openCur
-
-    for (s, i) in pipes[pos.cur]!.next do
-      have: 2 * (pos.goTo s i).time + 1 < 2 * pos.time := by 
-        simp [Position.goTo]; apply Position.twiceLess; assumption
-      let step <- maxFlowElephant pipes flow <| pos.goTo s i 
-      res := max res step
-
-    return res
-end
-termination_by 
-  maxFlowYou _  _ pos => 2 * pos.time
-  maxFlowElephant _ _ pos => 2 * pos.time + 1
+termination_by maxFlow _ pos => pos.time
 
 
-def runMaxFlow pipes time  := 
-  maxFlow pipes 0 {time := time} Cache.init 
+def runMaxFlow pipes time opened := 
+  maxFlow pipes {time := time, opened := opened}
 
-def runMaxFlowElephant pipes time  := 
-  maxFlowElephant pipes 0 {time := time} Cache.init 
+def runAllFlows (pipes: Pipes) (time: Nat) : Search (List Nat) := 
+  let nzCount := 1 <<< (pipes.filter (·.flow > 0)).size
+  let allBits := nzCount  - 1
+  (List.range nzCount).mapM (λ allow => (runMaxFlow pipes time (allBits ^^^ allow)))
+
+
+def sumFlow (results: List Nat) : Id (Nat × Nat × Nat) := do
+  let mut best := 0
+  let mut bestI := 0
+  let mut bestJ := 0
+  for (i, resMy) in results.enum do
+    for (j, resElephant) in results.enum do
+      let res := resMy + resElephant
+      if i &&& j == 0 && best < res then 
+        best := res
+        bestI := i
+        bestJ := j
+  return (best, bestI, bestJ)
+
+
+
 
 def main: IO Unit := do
   let lines <- readLines 16
@@ -211,10 +172,11 @@ def main: IO Unit := do
   let pipes := reindexPipes <| ls.toArray.qsort (fun p _ => p.name == "AA")
   IO.println pipes.size
   pipes.forM IO.println  
-  let (res, c) := runMaxFlow pipes 30
+  let (res, c) := runMaxFlow pipes 30 0 Cache.init
   IO.println res
   IO.println c.size
-
-  let (res, c) := runMaxFlowElephant pipes 26
-  IO.println res
+  let (allRes, c) := runAllFlows pipes 26 Cache.init
+  -- allRes.enum.forM IO.println
+  IO.println allRes.length
+  IO.println <| sumFlow allRes
   IO.println c.size
