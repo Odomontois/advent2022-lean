@@ -17,3 +17,5 @@ def differs [BEq α]: List α -> Bool
 def List.sum [HAdd α α α] [OfNat α 0] (xs: List α): α := xs.foldl (· + ·) 0
 
 def List.prod [HMul α α α] [OfNat α 1] (xs: List α): α := xs.foldl (· * ·) 1
+
+abbrev NEL α := {ls : List α // !ls.isEmpty}
