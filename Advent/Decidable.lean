@@ -15,3 +15,5 @@ instance {α β} : HAnd (Decidable α) (Decidable β) (Decidable (α ∧ β)) wh
     | isFalse nb => isFalse <| fun p => nb p.right
     | isTrue yb => isTrue <| And.intro ya yb
 end Decidable
+
+def decidable (P: Prop) [inst: Decidable P]: Decidable P := inst

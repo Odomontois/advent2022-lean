@@ -26,10 +26,16 @@ instance {α}: HOr (Parse α) (Parse α) (Parse α) where
 
 variable (p: Parse α)
 
-def str (txt: String): Parse Unit := λ s => 
+def strAs (txt: String) (x : α): Parse α := λ s => 
   if s.startsWith txt 
-  then  ok () <| s.drop txt.length
+  then ok x <| s.drop txt.length
   else error s!"expecting '{txt}'" s
+
+def str (txt: String): Parse Unit := strAs txt ()
+
+def choose (variants: List (String × α)): Parse α :=
+  let expected := fun _ => String.join <| (variants.map (·.fst) ).intersperse "|"
+  variants.foldl (fun acc (s, x) => acc ||| strAs s x) (throw s!"expected on of {expected ()}")
 
 def strChain (txts: List (List String)): Parse Unit := 
   txts.forM (·.foldl (· ||| str ·) (throw ""))

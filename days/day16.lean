@@ -70,8 +70,6 @@ def Cache.init: Cache := HashMap.empty
 
 abbrev Search α := StateM Cache α
 
-def decidable (P: Prop) [inst: Decidable P]: Decidable P := inst
-
 def maxFlow (pipes: Pipes) (pos: Position): Search Nat :=
   match decidable (0 < pos.time) with 
       | isFalse _ => pure 0

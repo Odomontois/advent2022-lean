@@ -8,3 +8,4 @@ import Advent.Function
 import Advent.Queue
 import Advent.Decidable
 import Advent.State
+import Advent.Array
