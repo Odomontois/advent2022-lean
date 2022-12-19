@@ -50,3 +50,7 @@ lean_exe day15 { root := `days.day15 }
 lean_exe day16 { root := `days.day16 }
 
 lean_exe day17 { root := `days.day17 }
+
+lean_exe day18 { root := `days.day18 }
+
+lean_exe day19 { root := `days.day19 }

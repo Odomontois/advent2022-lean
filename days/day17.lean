@@ -89,7 +89,7 @@ def pullNext: Falling :=
   let fig := fig.map <| fun (x, y) => (x + l, y)
   {f with figure := fig, figures := figures}
 
-def ofCommands (comms: List Command) (p : !comms.isEmpty) : Falling :=
+def ofCommands (comms: List Command) (_ : !comms.isEmpty) : Falling :=
   { commands := Cycling.ofList comms  
     figure   := Inhabited.default
     figures  := Cycling.ofList pieces

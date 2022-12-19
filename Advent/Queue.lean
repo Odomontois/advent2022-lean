@@ -113,10 +113,12 @@ def Queue (α : Type u) := Quotient (QueueSetoid α)
 
 namespace Queue
 
-def toList (q: Queue α): List α := 
+variable (q: Queue α)
+
+def toList: List α := 
   q.lift (·.toList) <| by intros; assumption
 
-def send (q: Queue α) (x: α): Queue α := 
+def send (x: α): Queue α := 
   q.lift (fun qd => Quot.mk _ (qd.send x)) <| by
     simp [HasEquiv.Equiv]
     unfold Setoid.r
@@ -130,7 +132,7 @@ def send (q: Queue α) (x: α): Queue α :=
     simp [QueueSetoid, QueueData.rel, QueueData.toList] at p
     rw [p]
     
-def pull (q: Queue α) : Option (α × Queue α) :=
+def pull: Option (α × Queue α) :=
   q.lift (fun qd => qd.pull.map (fun (a, xs) => (a, Quot.mk _ xs))) <| by
   intros a b p
   simp 
@@ -156,7 +158,7 @@ def pull (q: Queue α) : Option (α × Queue α) :=
     rw [p, QueueData.emptyPull] at p1
     rw [p1, p2]
 
-def isEmpty (q: Queue α): Bool := 
+def isEmpty: Bool := 
   q.lift (·.isEmpty) <| by
   intros a b p
   simp
@@ -177,9 +179,15 @@ def isEmpty (q: Queue α): Bool :=
 
 def empty: Queue α :=   Quot.mk _ ⟨[], []⟩
 
-def peak (q: Queue α): Option α := q.pull.map (·.fst)
+def peak: Option α := q.pull.map (·.fst)
 
-def tail (q: Queue α): Queue α := (q.pull.map (·.snd) ).getD empty
+def tail: Queue α := (q.pull.map (·.snd) ).getD empty
+
+def sendMany [ForIn Id ρ α](xs: ρ) : Id (Queue α) := do
+  let mut q := q
+  for x in xs do
+    q := q.send x
+  return q
 
 instance: Inhabited (Queue α) where
   default := empty
