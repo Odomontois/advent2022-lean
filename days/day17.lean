@@ -118,10 +118,12 @@ def tryStep: (Bool × Falling) :=
 
 def smallStep: Falling := f.tryStep.snd
 
-partial def step (f: Falling): Falling := 
-    let (ap, f) := f.tryStep
+def step (f: Falling) (fuel: Nat := 100000): Falling := 
+match fuel with 
+| 0 => f
+| fuel + 1 => let (ap, f) := f.tryStep
     if ap then f
-    else step f
+    else step f fuel
 
 def printOut : IO Unit := do
   f.append.tower.reverse.forM 
@@ -131,22 +133,28 @@ def wait (f: Falling): Nat -> Falling
   | 0 => f
   | c + 1 => wait f.step c
 
-partial def bigWait (f: Falling): Falling := 
-  go HashSet.empty f
+def bigWait (f: Falling): Falling := 
+  go HashSet.empty f 100000
 where
-  go (h: HashSet (Nat × Nat)) (f: Falling)  := 
+  go (h: HashSet (Nat × Nat)) (f: Falling) fuel  :=
+  match fuel with 
+  | 0 => f
+  | fuel + 1 =>  
     let q := (f.figures.cur, f.commands.cur)
     if h.contains q then f 
-    else go (h.insert q) f.step
+    else go (h.insert q) f.step fuel
 
 
 end Falling
 
-partial def loop (x: α) (f: α -> α) (action: α -> IO Unit): IO Unit := do
+def loop  (x: α) (f: α -> α) (action: α -> IO Unit) (fuel := 1000000): IO Unit :=
+match fuel with
+| 0 => pure ()
+| fuel + 1 =>  do
   let i <- IO.getStdin
   action x
   _ <- i.read 1  
-  loop (f x) f action
+  loop (f x) f action fuel
 
 def iters (count: Nat) (x: α) (f: α -> α): List α := 
   match count with
