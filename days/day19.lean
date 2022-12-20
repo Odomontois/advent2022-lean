@@ -83,6 +83,8 @@ namespace Map'
   def zipWith (f: α -> β -> γ) (map': Map' β): Map' γ := 
     ⟨ f map.ore map'.ore, f map.obsidian map'.obsidian, f map.geode map'.geode, f map.clay map'.clay  ⟩
 
+  def sum [Add α]: α := map.ore + map.obsidian + map.geode + map.clay
+
   def mapLE [LE α] [(x: α) -> (y: α) -> Decidable (x <= y)] (xs ys: Map' α): Bool := 
     (xs.ore <= ys.ore) && (xs.obsidian <= ys.obsidian) && (xs.geode <= ys.geode) && (xs.clay <= ys.clay)
 
@@ -146,15 +148,6 @@ namespace Map
 
   instance [LE α] [(x: α) -> (y: α) -> Decidable (x <= y)] {xs ys: Map α}: Decidable (xs <= ys) := 
     decidable (mapLE xs ys)
-
-  def mapLT [LT α] [(x: α) -> (y: α) -> Decidable (x < y)] (xs ys: Map α): Bool := 
-    values.all (fun m => xs.getMat m < ys.getMat m)
-
-  instance [LT α] [(x: α) -> (y: α) -> Decidable (x < y)]: LT (Map α) where
-    lt x y := mapLT x y
-
-  instance [LT α] [(x: α) -> (y: α) -> Decidable (x < y)] {xs ys: Map α}: Decidable (xs < ys) := 
-    decidable (mapLT xs ys)
 end Map
 
 
@@ -238,6 +231,8 @@ structure State' where
   mats: Map' Nat
 deriving BEq, Hashable, Ord, Inhabited, Lean.ToJson
 
+def State'.sum (s: State') := s.robots.sum + s.mats.sum
+
 def stateLT (xs ys: State'): Bool := xs.robots <= ys.robots && xs.mats <= ys.mats && !(xs == ys)
 
 instance : LT State' where
@@ -261,20 +256,11 @@ def simulateOne (bp: Blueprint) (results: Array State') (state: State'): Id (Arr
 def simulateStep (bp: Blueprint) (states: Array State'): Array State' := 
   let states' := states.foldl (simulateOne bp) Array.empty
   let states' := states'.uniques
-  let groups := states'.foldl (fun hm s =>   
-    hm.insert s.robots <|
-    if let some xs := hm.find? s.robots
-    then xs.push s.mats
-    else #[s.mats]
-  )  (HashMap.empty : HashMap (Map' Nat) (Array (Map' Nat)))
-  let groups := groups.toArray
+  -- if states'.size > 20000 then states' else 
+  let groups := (states'.groupBy (·.sum)).toArray.qsort (·.fst > ·.fst)
 
-  states'.filter (fun st => ! (groups.any (fun (robots, mats) => 
-    if robots == st.robots 
-    then mats.any ( fun x => st.mats <= x && st.mats != x ) 
-    else if st.robots <= robots
-    then mats.any ( st.mats <= · )
-    else false
+  states'.filter (fun st => !(groups.any (fun (s, sts) => 
+    if st.sum < s then sts.any ( st < · ) else false
   )))
 
 
@@ -303,6 +289,7 @@ def main: IO Unit := do
         gen := simulateStep bp gen
         -- IO.println gen
         IO.println s!"generation {g} size {gen.size}"
+      IO.println (gen.map (·.mats.geode)).toList.maximum?
 
 
   -- let mut score := 1

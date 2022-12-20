@@ -1,3 +1,4 @@
+import Lean
 namespace Array
 theorem modify_stable_size(arr: Array α) (f: α -> α) (n: Nat): arr.size = (arr.modify n f).size := by
   simp [modify, modifyM, dite]
@@ -24,6 +25,19 @@ def uniques [Ord α] [Inhabited α] [BEq α] (arr: Array α) : Id (Array α) := 
   for i in [1:arr.size] do
     if arr[i]! != arr[i - 1]! then
       res := res.push arr[i]!
+  return res
+
+open Lean (HashMap)
+
+def groupBy [Hashable β] [BEq β] (f: α -> β) (arr: Array α): Id (HashMap β (List α)) := do
+  let mut res := HashMap.empty
+  for a in arr do
+    let g := f a
+    res := res.insert g <| 
+      if let some lst := res.find? g
+      then a :: lst
+      else [a]
+
   return res
   
   
