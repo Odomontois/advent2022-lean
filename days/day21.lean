@@ -146,24 +146,7 @@ namespace Ratp
     toString |⟨x, y⟩ => s!"({x})/({y})"
 
 end Ratp
-
--- def search (monkeys: String -> Option Monkey): Option Int := open Monkey in do
---   let root <- monkeys "root"
---   let root <- if let Calculate _ l r := root 
---               then pure <| Calculate Op.minus l r 
---               else throw ()
-
---   for ab in [0:100000] do
---     let ab: Int := ab
---     for humn in [-ab, ab] do
---       let res <- calculate "root" <| fun s => match s with
---         | "root" => root
---         | "humn" => Ready humn
---         | other => monkeys other
---       if res == 0 then return humn
-  
---   throw ()
-    
+   
 
 
 def main: IO Unit := do
@@ -172,9 +155,7 @@ def main: IO Unit := do
   let monkeys: HashMap _ _ := HashMap.ofList monkeys
 
   let full := (Expr.collect monkeys.find?).get!
-  let x : Poly := #[1, 2]
-  let y : Poly := #[-2, 4, 1]
-  IO.println (x * y)
+
   IO.println <| full.calculate
 
   let full' := (Expr.collectFormula monkeys.find?).get!
