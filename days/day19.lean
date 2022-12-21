@@ -64,8 +64,7 @@ namespace Map
     | Material.obsidian => map.obsidian
     | Material.geode => map.geode
     | Material.clay => map.clay
-
-  
+    
   def modifyMat (mat: Material) (f: α -> α): Map α := 
      match mat with
     | Material.ore => {map with ore := f map.ore}
@@ -96,6 +95,9 @@ namespace Map
 
   instance [HAdd α β γ] : HAdd (Map α) (Map β) (Map γ) where
     hAdd xs ys := xs.zipWith (· + ·) ys
+
+  instance [HSub α β γ] : HSub (Map α) (Map β) (Map γ) where
+    hSub xs ys := xs.zipWith (· - ·) ys
 end Map
 
 
@@ -152,7 +154,7 @@ structure State where
   mats: Map Nat
 deriving BEq, Inhabited, Hashable, Lean.ToJson
 
-abbrev Cache := HashMap State Nat
+abbrev Cache := HashSet State
 
 def simulate (bp: Blueprint) (time: Nat) (robots: Map Nat) (mats: Map Nat) : StateM Cache Nat := 
 match time with 
@@ -160,18 +162,17 @@ match time with
 | time + 1 => do
   let cache <- StateT.get
   let state: State := ⟨ time, robots, mats ⟩
-  if let some res := cache.find? state
-  then return res
-  let mats' := robots.zipWith (· + ·) mats
+  if cache.contains state then return 0
+  let mats' := robots + mats
   let mut res <- simulate bp time robots mats'
   for mat in Material.values do
     let reqs := bp.getMat mat
     if reqs <= mats then 
-      let mats'' := mats'.zipWith (· - ·) reqs
+      let mats'' := mats' - reqs
       let robots' := robots.modifyMat mat (· + 1)
       let branch <- simulate bp time robots' mats''
       res := max res branch
-  StateM.update (·.insert state res)
+  StateM.update (·.insert state)
   return res
 
 -- simplified \ specialized blueprint for p2
@@ -193,19 +194,22 @@ instance: Coe Blueprint SBlueprint where
     geo'obs := bp.geode.obsidian
   }
 
--- simplified \specialized strategy for p2
+
+
 structure SStrategy where
   ores: Nat
   clays: Nat
-  obsidian: Nat := 0
+  clays2: Nat
+  obs: Nat
 deriving Lean.ToJson, Repr, BEq
 
 def allStrategies(max: Nat): Id (Array SStrategy) := do
   let mut res := Array.empty
   for ores in [1:max + 1] do
     for clays in [1:max + 1] do
-      for obs in [1:max + 1] do
-        res := res.push <| ⟨ ores, clays , obs⟩
+      for clays2 in [clays:max + 1] do
+        for obs in [0:max + 1] do
+          res := res.push <| ⟨ ores, clays , clays2, obs⟩
   return res
 
 abbrev Robots := Map Nat
@@ -224,8 +228,8 @@ where
     then some {mats with ore := mats.ore - b.geo'ore, obsidian := mats.obsidian - b.geo'obs} 
     else none
   
-  buyObsidianBot? (mats: Materials) (obsRobots : Nat ): Option Materials := 
-    if b.obs'ore <= mats.ore && b.obs'clay <= mats.clay && obsRobots < s.obsidian
+  buyObsidianBot? (mats: Materials) (obsRobots : Nat): Option Materials := 
+    if b.obs'ore <= mats.ore && b.obs'clay <= mats.clay && obsRobots <= s.obs
     then some {mats with ore := mats.ore - b.obs'ore, clay := mats.clay - b.obs'clay} 
     else none
 
@@ -235,10 +239,14 @@ where
       ({robots with ore := robots.ore + 1 } ,{mats with ore := mats.ore - b.ore'ore} + robots)
     else if robots.ore == s.ores && robots.clay < s.clays && b.clay'ore <= mats.ore then
       ({robots with clay := robots.clay + 1}, {mats with ore := mats.ore - b.clay'ore} + robots)
-    else if let some mats := buyGeodeBot? mats then 
-      ({robots with geode := robots.geode + 1}, (mats + robots))
     else if let some mats := buyObsidianBot? mats robots.obsidian then
       ({robots with obsidian := robots.obsidian + 1}, (mats + robots))
+    else if let some mats := buyGeodeBot? mats then 
+      ({robots with geode := robots.geode + 1}, (mats + robots))
+    else if let some mats := buyObsidianBot? mats 0 then
+      ({robots with obsidian := robots.obsidian + 1}, (mats + robots))
+    else if robots.ore == s.ores && robots.clay < s.clays2 && b.clay'ore <= mats.ore then
+      ({robots with clay := robots.clay + 1}, {mats with ore := mats.ore - b.clay'ore} + robots)
     else (robots, (mats + robots))
       
 def bestStrategy (b: SBlueprint) (time: Nat) (top := 10): Id Nat := do
@@ -249,15 +257,59 @@ def bestStrategy (b: SBlueprint) (time: Nat) (top := 10): Id Nat := do
     best := max best res
   return best 
 
+def ssimulate (bp: SBlueprint) (time: Nat): StateM Cache Nat := do
+  let mut res := 0
+  for oreBots in [0:4] do
+    let b <- bootstrap 1 0 time oreBots
+    res := max res b
+  return res
+where 
+  bootstrap bots ore
+  | 0, _ => pure 0
+  | time, 0 => go ⟨bots, 0, 0, 0⟩ ⟨ore, 0, 0, 0⟩ time
+  | time + 1, breq + 1 =>
+    if bp.ore'ore <= ore
+    then bootstrap (bots + 1) (ore + bots - bp.ore'ore) time breq
+    else bootstrap bots (ore + bots) time (breq + 1)
+
+  oreLimit := 4
+  clayLimit := 19
+  obsidianLimit := 17 
+
+  go (robots: Robots) (mats: Materials)
+  | 0 => pure mats.geode
+  | time + 1 => do
+    let cache <- StateT.get
+    let state: State := ⟨ time, robots, mats ⟩
+    if cache.contains state then return 0
+    StateT.set <| cache.insert state
+    let mats' := robots + mats
+    let mut res := 0
+    if bp.geo'ore <= mats.ore && bp.geo'obs <= mats.obsidian then
+      res <- go {robots with geode := robots.geode + 1} 
+                { mats' with ore := mats'.ore - bp.geo'ore, obsidian := mats'.obsidian - bp.geo'obs } 
+                time
+      if bp.clay'ore <= mats.ore then
+        res <- go {robots with clay := robots.clay + 1} 
+                  {mats' with ore := mats'.ore - bp.clay'ore } 
+                  time
+      if bp.obs'ore <= mats.ore && bp.obs'clay <= mats.clay then
+        let next <- go {robots with obsidian := robots.obsidian + 1}
+                       {mats' with ore := mats'.ore - bp.obs'ore, clay := mats'.clay - bp.obs'clay}
+                       time
+        res := max res next
+
+      let next <- go robots mats' time
+      res := max res next
+
+    return res
 open Material
 
 
 def main: IO Unit := do
   let s <- readInput 19
   let bps <- Blueprint.parse.rep.runIO s
-  let robots: Map Nat :=  ⟨1, 0, 0, 0⟩
-  let mats: Map Nat := ⟨0, 0, 0, 0⟩
-  let start <- IO.monoMsNow
+
   let mut score := 1
   for (i, bp) in bps.enum.take 3 do
     let res: Nat := bestStrategy bp 32
@@ -272,16 +324,20 @@ def main: IO Unit := do
   --   score := score + (i + 1) * res
   -- IO.println score
 
-  -- let mut score := 1
 
-  -- for (i, bp) in bps.enum.take 3 do
-  --   let (result, c) := (simulate bp 32 robots mats).run HashMap.empty
-  --   IO.println s!"blueprint {i + 1}: {bp}"
-  --   IO.println result
-  --   IO.println c.size
-  --   score := score * result
 
-  -- IO.println s!"score is {score}"
+
+  -- let robots: Map Nat :=  ⟨1, 0, 0, 0⟩
+  -- let mats: Map Nat := ⟨0, 0, 0, 0⟩
+  score := 1
+  for (i, bp) in bps.enum.take 3 do
+    let (result, c) := (ssimulate bp 32).run HashSet.empty
+    IO.println s!"(slow) blueprint {i + 1}: {bp}"
+    IO.println result
+    IO.println c.size
+    score := score * result
+
+  IO.println s!"score is {score}"
 
 def Map'  α := {arr : Array α // arr.size = 4}
 
