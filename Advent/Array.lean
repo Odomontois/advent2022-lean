@@ -1,4 +1,7 @@
 import Lean
+
+structure FinRange (n: Nat)
+
 namespace Array
 theorem modify_stable_size(arr: Array α) (f: α -> α) (n: Nat): arr.size = (arr.modify n f).size := by
   simp [modify, modifyM, dite]
@@ -39,7 +42,8 @@ def groupBy [Hashable β] [BEq β] (f: α -> β) (arr: Array α): Id (HashMap β
       else [a]
 
   return res
-  
-  
+
+-- def indices: FinRange 
+-- def Enum α := Array α
 
 end Array

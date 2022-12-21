@@ -224,8 +224,8 @@ where
     then some {mats with ore := mats.ore - b.geo'ore, obsidian := mats.obsidian - b.geo'obs} 
     else none
   
-  buyObsidianBot? (mats: Materials) : Option Materials := 
-    if b.obs'ore <= mats.ore && b.obs'clay <= mats.clay 
+  buyObsidianBot? (mats: Materials) (obsRobots : Nat ): Option Materials := 
+    if b.obs'ore <= mats.ore && b.obs'clay <= mats.clay && obsRobots < s.obsidian
     then some {mats with ore := mats.ore - b.obs'ore, clay := mats.clay - b.obs'clay} 
     else none
 
@@ -237,7 +237,7 @@ where
       ({robots with clay := robots.clay + 1}, {mats with ore := mats.ore - b.clay'ore} + robots)
     else if let some mats := buyGeodeBot? mats then 
       ({robots with geode := robots.geode + 1}, (mats + robots))
-    else if let some mats := buyObsidianBot? mats then
+    else if let some mats := buyObsidianBot? mats robots.obsidian then
       ({robots with obsidian := robots.obsidian + 1}, (mats + robots))
     else (robots, (mats + robots))
       
@@ -265,12 +265,12 @@ def main: IO Unit := do
     score := score * res
   IO.println s!"score = {score}"
   -- IO.println (allStrategies 2)
-  score := 0
-  for (i, bp) in bps.enum do
-    let res : Nat := bestStrategy bp 24 20
-    IO.println s!"blueprint {i + 1}: {res}"
-    score := score + (i + 1) * res
-  IO.println score
+  -- score := 0
+  -- for (i, bp) in bps.enum do
+  --   let res : Nat := bestStrategy bp 24 20
+  --   IO.println s!"blueprint {i + 1}: {res}"
+  --   score := score + (i + 1) * res
+  -- IO.println score
 
   -- let mut score := 1
 

@@ -42,18 +42,18 @@ def strChain (txts: List (List String)): Parse Unit :=
 
 def take (i: Nat): Parse String := λ s => ok (s.take i) (s.drop i)
 
-def seg (p: Char -> Bool): Parse String := do
+def seg (p: Char -> Bool) (err: String := ""): Parse String := do
   let s <- EStateM.get
   let i := s.nextWhile p 0
-  if i == 0 then throw s!"incorrect character"
+  if i == 0 then throw s!"incorrect character {err}"
   take i.byteIdx
 
 def attempt (err: β -> String) (parse: β -> Option α) (b: β) : Parse α := match parse b with
 | some x => pure x
 | none => throw <| err b
 
-def int : Parse Int := seg (λ c => c.isDigit || c == '-') >>= attempt (s!"'{·}' is not an integer") (·.toInt?)
-def nat : Parse Nat := seg (·.isDigit) >>= attempt (s!"'{·}' is not a natural") (·.toNat!)
+def int : Parse Int := seg (λ c => c.isDigit || c == '-') (err := "digit or sign") >>= attempt (s!"'{·}' is not an integer") (·.toInt?)
+def nat : Parse Nat := seg (·.isDigit) (err := "digit") >>= attempt (s!"'{·}' is not a natural") (·.toNat!)
 
 def ws: Parse Unit := EStateM.modifyGet ((), ·.trimLeft)
 
