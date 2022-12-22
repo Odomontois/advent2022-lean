@@ -1,8 +1,11 @@
 import Lean
+import Std
+import Lean.Elab.Command
 
 structure FinRange (n: Nat)
 
 namespace Array
+
 theorem modify_stable_size(arr: Array α) (f: α -> α) (n: Nat): arr.size = (arr.modify n f).size := by
   simp [modify, modifyM, dite]
   generalize Nat.decLt n (size arr) = q
@@ -43,7 +46,24 @@ def groupBy [Hashable β] [BEq β] (f: α -> β) (arr: Array α): Id (HashMap β
 
   return res
 
--- def indices: FinRange 
--- def Enum α := Array α
+def autoGrow (p: Array α) (n: Nat) (elem: α): Array α :=
+  if p.size < n then p.append (Array.mkArray (n - p.size) elem) else p
+
+def zipWithGrow (xs: Array α) (ys: Array β) (f: α -> β -> γ) (x: α) (y: β): Array γ :=
+  let xs := xs.autoGrow ys.size x
+  let ys := ys.autoGrow xs.size y
+  xs.zipWith ys f
+
+-- TODO proof of indexing
+def transpose [Inhabited α] (arr: Array (Array α)): Array (Array α) := 
+  let m := arr.size
+  let n := arr.foldl (min · ·.size) (arr[0]?.elim 0 (·.size))
+  let res := Array.mkArray n <| Array.mkArray m default
+  (fill res).2
+where 
+  fill: StateM _ _ := fun res => do
+    let res <- res.mapIdxM <| fun i row =>
+        row.mapIdxM <| fun j _ => arr[j]![i]!
+    ((), res)
 
 end Array

@@ -97,8 +97,8 @@ theorem nonEmptyPull {q: QueueData α} {x : α} {xs: List α}:
 
 end QueueData
 
-def QueueSetoid (α : Type u): Setoid (QueueData α) := {
-  r := QueueData.rel
+def EqvSetoid {α : Type u} (f: α -> β): Setoid α := {
+  r := λ x y => f x = f y
   iseqv := {
     refl := by simp [QueueData.rel]
     symm := by intros _ _ p; simp [QueueData.rel]; rw [p]
@@ -106,10 +106,9 @@ def QueueSetoid (α : Type u): Setoid (QueueData α) := {
   }
 }
 
+def QueueIsEqualUnderToList (α : Type u): Setoid (QueueData α) := EqvSetoid <| QueueData.toList
 
-
-
-def Queue (α : Type u) := Quotient (QueueSetoid α) 
+def Queue (α : Type u) := Quotient (QueueIsEqualUnderToList α) 
 
 namespace Queue
 
@@ -127,9 +126,9 @@ def send (x: α): Queue α :=
     cases b; case mk ib tb => 
     simp [QueueData.send]
     apply Quot.sound
-    simp [QueueSetoid, QueueData.rel, QueueData.toList]
+    simp [QueueIsEqualUnderToList, EqvSetoid, QueueData.rel, QueueData.toList]
     repeat rw [← List.append_assoc]
-    simp [QueueSetoid, QueueData.rel, QueueData.toList] at p
+    simp [QueueIsEqualUnderToList, EqvSetoid, QueueData.rel, QueueData.toList] at p
     rw [p]
     
 def pull: Option (α × Queue α) :=
@@ -150,7 +149,7 @@ def pull: Option (α × Queue α) :=
       cases p2 with | intro bqt p6 =>
       simp [p5, p6, Option.map]
       apply Quot.sound
-      simp [QueueSetoid, QueueData.rel]
+      simp [QueueIsEqualUnderToList, EqvSetoid, QueueData.rel]
       rw [p5.left, p6.left]
   . rw [QueueData.isEmptyToList] at p1
     let p2 := p1
@@ -179,9 +178,9 @@ def isEmpty: Bool :=
 
 def empty: Queue α :=   Quot.mk _ ⟨[], []⟩
 
-def peak: Option α := q.pull.map (·.fst)
+def peak: Option α := q.pull.map (·.1)
 
-def tail: Queue α := (q.pull.map (·.snd) ).getD empty
+def tail: Queue α := (q.pull.map (·.2) ).getD empty
 
 def sendMany [ForIn Id ρ α](xs: ρ) : Id (Queue α) := do
   let mut q := q

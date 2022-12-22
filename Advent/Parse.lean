@@ -34,7 +34,7 @@ def strAs (txt: String) (x : α): Parse α := λ s =>
 def str (txt: String): Parse Unit := strAs txt ()
 
 def choose (variants: List (String × α)): Parse α :=
-  let expected := fun _ => String.join <| (variants.map (·.fst) ).intersperse "|"
+  let expected := fun _ => String.join <| (variants.map (·.1) ).intersperse "|"
   variants.foldl (fun acc (s, x) => acc ||| strAs s x) (throw s!"expected on of {expected ()}")
 
 def strChain (txts: List (List String)): Parse Unit := 

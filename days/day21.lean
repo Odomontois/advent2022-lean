@@ -25,13 +25,15 @@ def apply [Ops α] (x y: α): Op -> α
 | mul => x * y
 end Op
 
+inductive Fix [Functor f] (f: Type -> Type)
+| wrap : f α -> (u: α -> Fix f) -> Fix f
+
 inductive Monkey (α: Type)
 | Ready (value: α)
 | Calculate (op: Op) (l r: String)
 deriving Inhabited, Lean.ToJson, Hashable, BEq
 
 namespace Monkey
-
 def map(f: α -> β): Monkey α -> Monkey β 
 | Ready x => Ready (f x)
 | Calculate op l r => Calculate op l r
@@ -53,13 +55,6 @@ def parse: Parse (String × Monkey Int) := open Parse in do
   return (self, monkey)
 where 
   name := Parse.seg (·.isAlpha) (err := "alpha")
-
-
--- instance [Ops α] : Ops (Monkey (Option α)) where
---   add x y := match x, y with
---     | Ready (some x), Ready (some y) => Ready (some (x + y))
---     | _ => Calculate Op.plus x y
-
 end Monkey
 
 
@@ -104,16 +99,11 @@ def Poly := Array Int
 
 namespace Poly
 
-def autoGrow (p: Poly) (n: Nat): Poly :=
-  if p.size < n then p.append (Array.mkArray (n - p.size) 0) else p
 
-def zipAutoGrow (f: Int -> Int -> Int) (xs ys: Poly): Poly :=
-  let xs := xs.autoGrow ys.size
-  let ys := ys.autoGrow xs.size
-  xs.zipWith ys f
 
-instance : Add Poly where add := zipAutoGrow (· + ·)
-instance : Sub Poly where sub := zipAutoGrow (· - ·)
+
+instance : Add Poly where add := (·.zipWithGrow · (· + ·) 0 0)
+instance : Sub Poly where sub := (·.zipWithGrow · (· - ·) 0 0) 
 instance : Mul Poly where 
   mul (xs: Array Int) (ys: Array Int): Id Poly := do
   let mut res := Array.mkArray (xs.size + ys.size - 1) 0
