@@ -4,6 +4,8 @@ import Lean.Elab.Command
 
 structure FinRange (n: Nat)
 
+abbrev Matrix α := Array (Array α)
+
 namespace Array
 
 theorem modify_stable_size(arr: Array α) (f: α -> α) (n: Nat): arr.size = (arr.modify n f).size := by

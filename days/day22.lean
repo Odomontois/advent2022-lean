@@ -23,7 +23,7 @@ structure Map where
   elements: Array (Array Char)
   side: Nat
   glues: Array Glue
-  trace :Array (Array Char) := elements
+  trace: Array (Array Char) := elements
 deriving Inhabited, Lean.ToJson, Repr, BEq
 
 

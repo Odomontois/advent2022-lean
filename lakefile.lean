@@ -2,7 +2,7 @@ import Lake
 open Lake DSL
 
 package advent {
-  -- add package configuration options here
+  isLeanOnly := true
 }
 
 require mathlib from git
@@ -17,7 +17,7 @@ lean_exe advent {
   root := `Main
 }
 
-@[default_target]
+-- @[default_target]
 lean_exe fpbench {root := `playground.fpbench }
 
 --@[default_target]
@@ -86,3 +86,4 @@ lean_exe day21 { root := `days.day21 }
 --@[default_target]
 lean_exe day22 { root := `days.day22 }
 
+lean_exe day23 { root := `days.day23 }
