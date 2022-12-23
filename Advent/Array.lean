@@ -2,9 +2,25 @@ import Lean
 import Std
 import Lean.Elab.Command
 
-structure FinRange (n: Nat)
 
 abbrev Matrix α := Array (Array α)
+
+
+structure FinRange (n: Nat) 
+
+def finRange (n: Nat): FinRange n := {}
+
+def FinRange.forIn [Monad m] (rng: FinRange n) (b: β) (f: Fin n -> β -> m (ForInStep β)) (i: Nat): m β :=
+  if p: i < n then do 
+      let step <- f ⟨i, p⟩ b
+      match step with 
+      | .done b' => pure b'
+      | .yield b'=> forIn rng b' f (i + 1) 
+  else pure b
+termination_by forIn _ _ _ i => n - i
+
+instance {n: Nat}: ForIn m (FinRange n) (Fin n) where
+  forIn rng b f := FinRange.forIn rng b f 0
 
 namespace Array
 
@@ -69,3 +85,37 @@ where
     ((), res)
 
 end Array
+
+structure Matr (α: Type) where
+  data: Array (Array α) 
+  n: Nat
+  m: Nat
+  ns: data.size = n
+  ms (i: Fin n): (data.get ⟨i.val, by rw [ns] ; exact i.isLt⟩).size = m
+
+
+namespace Matr
+  variable (mat: Matr α)
+  def get (i: Fin mat.n) (j: Fin mat.m): α := 
+    let row := mat.data.get ⟨i.val, by rw[mat.ns] ; exact i.isLt⟩
+    row[j]'(by rw [mat.ms i]; exact j.isLt)
+  
+  instance {α}: GetElem (Matr α) (Nat × Nat) α fun mat (i, j) => i < mat.n ∧ j < mat.m where
+    getElem mat := fun (i, j) ⟨pi, pj⟩ => mat.get ⟨i, pi⟩ ⟨j, pj⟩
+
+  structure Indices {α : Type} (mat: Matr α) where
+
+  instance {mat: Matr α} : ForIn w (Indices mat) (Fin mat.n × Fin mat.m) where
+    forIn _ b f := do
+      let mut b := b
+      for i in finRange mat.n do
+        for j in finRange mat.m do
+          match (<- f (i, j) b) with
+          | .yield b' => b := b'
+          | .done b'  => return b'
+      return b
+end Matr
+
+
+
+
