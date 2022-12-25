@@ -2,7 +2,7 @@ import Lean
 import Std
 import Lean.Elab.Command
 
-
+-- set_option max_re
 abbrev Matrix α := Array (Array α)
 
 
@@ -12,8 +12,7 @@ def finRange (n: Nat): FinRange n := {}
 
 def FinRange.forIn [Monad m] (rng: FinRange n) (b: β) (f: Fin n -> β -> m (ForInStep β)) (i: Nat): m β :=
   if p: i < n then do 
-      let step <- f ⟨i, p⟩ b
-      match step with 
+      match (<- f ⟨i, p⟩ b) with
       | .done b' => pure b'
       | .yield b'=> forIn rng b' f (i + 1) 
   else pure b
@@ -29,18 +28,44 @@ theorem modify_stable_size(arr: Array α) (f: α -> α) (n: Nat): arr.size = (ar
   generalize Nat.decLt n (size arr) = q
   cases q <;> simp [Id.run] 
 
-theorem zipWith_eq_size {n: Nat} {arr: Array α} {arr' : Array β} (f: α -> β -> γ) 
-  (p: arr.size = n) (p': arr'.size = n)
-  : (arr.zipWith arr' f).size = n := by 
-    simp [zipWith,  size]
-    unfold zipWithAux
-    match n with 
-    | 0 => 
-      rw [<- p]
-      simp [List.length]
-      rw [p] 
-    | n + 1 => 
-      admit
+
+namespace ZipWithN
+variable (as: Array α) (bs: Array β) (f: α -> β -> γ) (p: as.size = bs.size)
+
+def go (arr: Array γ) (i: Nat): Array γ   := 
+  if q : i < as.size then
+    let a := as[i]'q
+    let b := bs[i]'(by rw [<-p]; exact q)
+    go (arr.push <| f a b) (i + 1)
+  else arr
+  termination_by go _ i => as.size - i
+
+def zipWithN: Array γ := go as bs f p Array.empty 0
+
+theorem zipWithNSizeGo (ip: i <= as.size) (ap: i = arr.size): (go as bs f p arr i).size = as.size := by
+  unfold go
+  split
+  . apply zipWithNSizeGo
+    . apply Nat.succ_le_of_lt
+      assumption
+    . rw [Array.size_push]
+      simp
+      assumption
+  . rw [<-ap] 
+    apply Nat.le_antisymm
+    . assumption
+    . apply Nat.le_of_not_lt
+      assumption
+termination_by zipWithNSizeGo => as.size - i
+
+theorem zipWithNSize: (zipWithN as bs f p).size = as.size := by 
+  apply zipWithNSizeGo 
+  . apply Nat.zero_le
+  . simp [Array.size, List.length]
+
+end ZipWithN
+
+def zipWithN as bs (f: α -> β -> γ) := ZipWithN.zipWithN as bs f
 
 def uniques [Ord α] [Inhabited α] [BEq α] (arr: Array α) : Id (Array α) := do
   if arr.isEmpty then return arr
@@ -114,6 +139,27 @@ namespace Matr
           | .yield b' => b := b'
           | .done b'  => return b'
       return b
+
+  -- def happend (mat': Matr α) (p: mat.n = mat'.n): { m: Matr α // m.n = mat.n ∧ m.m = (mat.m + mat'.m) } := 
+  --   let ⟨data, q⟩ := mat.data.zipWithN mat'.data (· ++ ·) <| by rw [mat.ns, mat'.ns, p]
+  --   let m := {
+  --       data 
+  --       n := mat.n
+  --       m := mat.m + mat'.m
+  --       ns := by rw [q, mat.ns]
+  --       ms := by intro i; admit
+  --   }
+  --   ⟨m, by simp⟩
+  def happend (mat': Matr α) (p: mat.n = mat'.n): Matr α := 
+    let data := mat.data.zipWithN mat'.data (· ++ ·) <| by rw [mat.ns, mat'.ns, p]
+    have q: data.size = mat.data.size := by apply Array.ZipWithN.zipWithNSize 
+    {
+        data 
+        n := mat.n
+        m := mat.m + mat'.m
+        ns := by rw [q, mat.ns]
+        ms := by intro i; admit
+    }
 end Matr
 
 

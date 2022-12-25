@@ -88,9 +88,12 @@ def step (m: Matrix Char) (round: Nat := 0): IO (Matrix Char × Bool) := do
   if p: i < 4 then step' m ⟨i, p⟩ else pure (m, false)
 
 
-partial def howLong (m: Matrix Char) (round: Nat := 0): IO Nat := do
+def howLong (m: Matrix Char): IO Nat := go m 0 100000
+where go m round: Nat -> IO Nat
+| 0 => pure 0
+| fuel + 1 => do  
   let (m, moved) <- step m round
-  if moved then howLong m (round + 1) else pure round
+  if moved then go m(round + 1) fuel else pure round
 
 def main: IO Unit := do
   let steps := 10
