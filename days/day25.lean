@@ -31,26 +31,72 @@ namespace DoubleSys
     addDig n
     | .Z => n * base'
     | .DP d => n * base' + d + 1
-    | .DN d => n * base' - d - 1 
+    | .DN d => n * base' - d - 1
 
+  private theorem doubleLe: b > 0 -> a < b * 2 -> ¬ (a < b) -> b * 2 - 1 - a < b := by 
+    intros u p q
+    rw [<-Nat.sub_add_eq] 
+    have p₂: b = b * 2 - b := by 
+      rw [Nat.mul_add b 1 1]
+      simp
+    conv => rhs; rw [p₂]
+    apply Nat.sub_lt_sub_left
+    . apply Nat.lt_add_of_pos_left
+      simp
+      assumption
+    . apply Nat.lt_of_not_le
+      intro p
+      apply q
+      apply Nat.lt_of_succ_le
+      rw [Nat.add_comm] at p
+      assumption
+      
   instance {base}: Coe Nat (DoubleSys base) where
     coe x := go Array.empty x x
   where
-    base' := base * 2 + 1
     go acc x
     | 0 => acc.reverse
     | fuel + 1 => 
+      let base' := base * 2 + 1
       if x == 0 then acc.reverse else
       let r := x % base'
-      let x := x / base'
-      let d := match r with
+      let x' := x / base'
+      let d := match q: r with
         | 0 => DDigit.Z
-        | r + 1 => 
-          if p: r < base then DDigit.DP ⟨ r, p ⟩
-          else let r := 2 * base - 1 - r
-               if p: r < base then DDigit.DN ⟨ r, p ⟩
-               else DDigit.Z 
-      let x := if let .DN _ := d then x + 1 else x
+        | r' + 1 => 
+          if p: r' < base then DDigit.DP ⟨ r', p ⟩
+          else 
+            let r'' := base * 2 - 1 - r'
+            DDigit.DN <| Fin.mk r'' <| by 
+              apply doubleLe
+              . apply Nat.lt_of_not_le
+                intro p₂
+                rw [Nat.le_zero] at p₂
+                have bq: base' = base * 2 + 1 := Eq.refl _
+                conv at bq =>
+                  rw [p₂]
+                  rhs
+                  simp
+                have rp: r = x % base' := Eq.refl _
+                have rp₂ : x % base' < 1 := by 
+                  rw [<-bq]
+                  apply Nat.mod_lt
+                  apply Nat.zero_lt_of_ne_zero
+                  simp
+                rw [←rp, q] at rp₂
+                contradiction
+              . apply Nat.lt_of_succ_le
+                rw [<-q]
+                apply Nat.le_of_lt_succ
+                have qq: base' = (base * 2).succ := by simp
+                rw [<-qq]
+                have qqq: r = x % base' := by simp
+                rw [qqq]
+                apply Nat.mod_lt
+                rw [qq]
+                apply Nat.zero_lt_succ
+              . assumption
+      let x := if let .DN _ := d then x' + 1 else x'
       go (acc.push d) x fuel
 
 
