@@ -16,10 +16,6 @@ deriving BEq, Repr, Inhabited
 
 open Pass
 
-
--- We will encode the driver (the captain) as the default inhabitant, i.e. none
--- So the passenger list is a List of Options
-
 abbrev Bank P := List (Pass P)
 def State P := Bank P × Bank P
 
@@ -31,7 +27,7 @@ class Moves (P : Type) where
 class ForbiddenMoves (P: Type) where
   forbidden: List (P × P)
 
-@[simp] def checkBank [BEq P] [FM: ForbiddenMoves P] (b: Bank P): Bool := 
+def checkBank [BEq P] [FM: ForbiddenMoves P] (b: Bank P): Bool := 
   not <| FM.forbidden.any <| λ (x, y) => b.contains (one x) && b.contains (one y) && !b.contains driver
 
 instance [BEq P] [ForbiddenMoves P]: Moves P where
@@ -80,7 +76,7 @@ instance : ForbiddenMoves Passenger where
   forbidden := [(.goat, .cabbage), (.fox, .goat)]
 
 def all: Bank Passenger := [driver, one .goat, one .fox, one .cabbage]
-abbrev goat: Bank Passenger := [driver, one .goat]
+def onlyGoat: Bank Passenger := [driver, one .goat]
 
 def solution0: Chain (all, []) (all, []) := .done (by simp)
 
@@ -92,21 +88,24 @@ macro_rules
 
 macro "chill" : tactic => `(tactic | exact (Chain.done (by simp)))
 
-def solution1: Chain (goat, []) ([], goat) := by
+def solution1: Chain (onlyGoat, []) ([], onlyGoat) := by
   drive one .goat
   chill
 
 abbrev alone: Pass α := driver
 
+
+open Passenger
+
 def solution2: Chain (all, []) ([], all) := by
   unfold all
-  drive one .goat
+  drive one goat
   drive alone
-  drive one .cabbage
-  drive one .goat
-  drive one .fox
+  drive one cabbage
+  drive one goat
+  drive one fox
   drive alone
-  drive one .goat
+  drive one goat
   chill
   
     
