@@ -31,7 +31,8 @@ def checkBank [BEq P] [FM: ForbiddenMoves P] (b: Bank P): Bool :=
   not <| FM.forbidden.any <| λ (x, y) => b.contains (one x) && b.contains (one y) && !b.contains driver
 
 instance [BEq P] [ForbiddenMoves P]: Moves P where
-  allowed |(l, r) => checkBank l && checkBank r
+  allowed |(l, r) => checkBank l && checkBank r && 
+    (l.filter (· == driver) ++ r.filter (· == driver)).length == 1
 
 def State.good [m: Moves P] := m.allowed
 
@@ -63,7 +64,7 @@ def equalStates [BEq P] (s₁ s₂ : State P): Bool :=
   equalBanks s₁.fst s₂.fst && equalBanks s₁.snd s₂.snd
 
 inductive Chain [BEq P] [Moves P] : State P -> State P -> Type where
-  | done {s t : State P} (e: equalStates s t) : Chain s t
+  | done {s t : State P} (goodStart: s.good) (e: equalStates s t) : Chain s t
   | step (p: Pass P) (correct: (move s p).isSome) (next: Chain ((move s p).extract correct) u): Chain s u
   
 inductive Passenger where
@@ -78,22 +79,20 @@ instance : ForbiddenMoves Passenger where
 def all: Bank Passenger := [driver, one .goat, one .fox, one .cabbage]
 def onlyGoat: Bank Passenger := [driver, one .goat]
 
-def solution0: Chain (all, []) (all, []) := .done (by simp)
-
+def solution0: Chain (all, []) (all, []) := .done (by simp) (by simp)
 
 syntax "drive" term: tactic
 macro_rules
 |`(tactic| drive $e) => 
   `(tactic| apply (Chain.step $e (by simp)); conv =>  lhs; reduce)
 
-macro "chill" : tactic => `(tactic | exact (Chain.done (by simp)))
+macro "chill" : tactic => `(tactic | exact (Chain.done (by simp) (by simp)))
 
 def solution1: Chain (onlyGoat, []) ([], onlyGoat) := by
   drive one .goat
   chill
 
 abbrev alone: Pass α := driver
-
 
 open Passenger
 
@@ -107,6 +106,10 @@ def solution2: Chain (all, []) ([], all) := by
   drive alone
   drive one goat
   chill
+
+def stupidState: State Passenger := ([driver, driver], [driver, driver])
+
+def stupidSolution: Chain stupidState stupidState := by admit
   
     
   
