@@ -72,12 +72,14 @@ def solution0: Chain (all, []) (all, []) := .done
 
 -- #eval (move (goat, []) (some Passenger.goat))
 
-def solution1: Chain (goat, []) ([], goat) := 
-  .step (some .goat) (by simp) _
-  -- apply (Chain.step (some Passenger.goat) (by simp))
-  -- conv => 
-  --   lhs
-  --   reduce
+def solution1: Chain (goat, []) ([], goat) := by
+  apply (Chain.step (some Passenger.goat) (by simp))
+  conv => 
+    lhs
+    reduce
+  apply Chain.done
+
+def solution2: Chain (all, []) ([], all) := by admit
   
     
   
