@@ -1,6 +1,5 @@
 import Lean
--- import Mathlib
-open Lean Parser.Tactic Elab Command Elab.Tactic Meta
+import MathLib
 
 
 inductive Side where 
@@ -14,9 +13,11 @@ inductive Pass (α: Type)
 deriving BEq, Repr, Inhabited
 
 
+def U := Array
 open Pass
 
 abbrev Bank P := List (Pass P)
+
 def State P := Bank P × Bank P
 
 instance : Inhabited (State P) where default := ([], [])
@@ -44,7 +45,7 @@ def side [BEq α] (sides: List α × List α) (el: α): Option Side :=
 def move [BEq P] [Moves P] (s : State P) (pass: Pass P): Option (State P) := 
   do
     let driverSide <- side s driver
-    let passengerSide <- side s <| pass
+    let passengerSide <- side s pass
     if driverSide != passengerSide then none 
     let crossing := if pass == driver then [driver] else [driver, pass]
     let res := match driverSide with
@@ -67,17 +68,17 @@ inductive Chain [BEq P] [Moves P] : State P -> State P -> Type where
   | done {s t : State P} (goodStart: s.good) (e: equalStates s t) : Chain s t
   | step (p: Pass P) (correct: (move s p).isSome) (next: Chain ((move s p).extract correct) u): Chain s u
   
-inductive Passenger where
+inductive WGC where
+  | wolf
   | goat
-  | fox
   | cabbage
 deriving BEq, Repr, Inhabited
 
-instance : ForbiddenMoves Passenger where
-  forbidden := [(.goat, .cabbage), (.fox, .goat)]
+instance : ForbiddenMoves WGC where
+  forbidden := [(.goat, .cabbage), (.wolf, .goat)]
 
-def all: Bank Passenger := [driver, one .goat, one .fox, one .cabbage]
-def onlyGoat: Bank Passenger := [driver, one .goat]
+def all: Bank WGC := [driver, one .goat, one .wolf, one .cabbage]
+def onlyGoat: Bank WGC := [driver, one .goat]
 
 def solution0: Chain (all, []) (all, []) := .done (by simp) (by simp)
 
@@ -94,7 +95,7 @@ def solution1: Chain (onlyGoat, []) ([], onlyGoat) := by
 
 abbrev alone: Pass α := driver
 
-open Passenger
+open WGC
 
 def solution2: Chain (all, []) ([], all) := by
   unfold all
@@ -102,12 +103,12 @@ def solution2: Chain (all, []) ([], all) := by
   drive alone
   drive one cabbage
   drive one goat
-  drive one fox
+  drive one wolf
   drive alone
   drive one goat
   chill
 
-def stupidState: State Passenger := ([driver, driver], [driver, driver])
+def stupidState: State WGC := ([driver, driver], [driver, driver])
 
 def stupidSolution: Chain stupidState stupidState := by admit
   
